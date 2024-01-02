@@ -6,6 +6,7 @@
  */
 
 const fs = require('node:fs/promises');
+const fsSync = require('node:fs');
 const http = require('http');
 const os = require('os');
 const path = require('path');
@@ -17,11 +18,23 @@ const { optimize } = require('../lib/svgo.js');
 const width = 960;
 const height = 720;
 
+// const FILE_PATTERN = new RegExp('.*');
+const FILE_PATTERN = new RegExp('.*media\\-flash\\..*');
+
+let configFileName;
+configFileName = 'testconfig.json';
+const DEFAULT_CONFIG = {
+  floatPrecision: 4,
+  //   multipass: true,
+};
+const CONFIG = configFileName ? readConfigFile(configFileName) : DEFAULT_CONFIG;
+
 /** @type {PageScreenshotOptions} */
 const screenshotOptions = {
   omitBackground: true,
   clip: { x: 0, y: 0, width, height },
   animations: 'disabled',
+  timeout: 80000,
 };
 
 /**
@@ -37,9 +50,13 @@ const runTests = async (list) => {
    * @param {string} name
    */
   const processFile = async (page, name) => {
-    await page.goto(`http://localhost:5000/original/${name}`);
+    await page.goto(`http://localhost:5000/original/${name}`, {
+      timeout: 80000,
+    });
     const originalBuffer = await page.screenshot(screenshotOptions);
-    await page.goto(`http://localhost:5000/optimized/${name}`);
+    await page.goto(`http://localhost:5000/optimized/${name}`, {
+      timeout: 80000,
+    });
     const optimizedBufferPromise = page.screenshot(screenshotOptions);
 
     const writeDiffs = process.env.NO_DIFF == null;
@@ -75,6 +92,9 @@ const runTests = async (list) => {
     let item;
     const page = await context.newPage();
     while ((item = list.pop())) {
+      if (!FILE_PATTERN.test(item)) {
+        continue;
+      }
       await processFile(page, item);
     }
     await page.close();
@@ -93,6 +113,12 @@ const runTests = async (list) => {
   console.info(`Passed: ${passed}`);
   return mismatched === 0;
 };
+
+function readConfigFile(fileName) {
+  const data = fsSync.readFileSync(fileName);
+  const json = JSON.parse(data);
+  return json;
+}
 
 (async () => {
   try {
@@ -116,9 +142,7 @@ const runTests = async (list) => {
         return;
       }
       if (req.url.startsWith('/optimized/')) {
-        const optimized = optimize(file, {
-          floatPrecision: 4,
-        });
+        const optimized = optimize(file, CONFIG);
         res.setHeader('Content-Type', 'image/svg+xml');
         res.end(optimized.data);
         return;

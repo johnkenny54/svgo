@@ -4,7 +4,8 @@ const FS = require('fs');
 const PATH = require('path');
 const EOL = require('os').EOL;
 const regEOL = new RegExp(EOL, 'g');
-const regFilename = /^(.*)\.(\d+)\.svg$/;
+const regFilename = /^(removeHiddenElems)\.(\d+)\.svg$/;
+// const regFilename = /^(.*)\.(\d+)\.svg$/;
 const { optimize } = require('../../lib/svgo.js');
 
 describe('plugins tests', function () {

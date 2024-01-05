@@ -1,0 +1,33 @@
+Don't remove used symbols. 
+
+===
+
+<svg xmlns="http://www.w3.org/2000/svg">
+    <rect fill="url(#b)" width="64" height="64"/>
+    <filter id="a">
+        <feGaussianBlur stdDeviation="1" id="feGaussianBlur6" />
+    </filter>
+    <symbol>
+        <g style="filter:url(#a)">
+            <linearGradient id="b" gradientUnits="userSpaceOnUse" x1="3.9702001" y1="2.4247999" x2="3.9702001" y2="7.5497999">
+                <stop offset="1" style="stop-color:#FFFFFF" />
+            </linearGradient>
+        </g>
+    </symbol>
+</svg>
+
+@@@
+
+<svg xmlns="http://www.w3.org/2000/svg">
+    <rect fill="url(#b)" width="64" height="64"/>
+    <filter id="a">
+        <feGaussianBlur stdDeviation="1" id="feGaussianBlur6" />
+    </filter>
+    <symbol>
+        <g style="filter:url(#a)">
+            <linearGradient id="b" gradientUnits="userSpaceOnUse" x1="3.9702001" y1="2.4247999" x2="3.9702001" y2="7.5497999">
+                <stop offset="1" style="stop-color:#FFFFFF" />
+            </linearGradient>
+        </g>
+    </symbol>
+</svg>

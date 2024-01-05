@@ -4,6 +4,7 @@
  */
 
 import fs from 'node:fs/promises';
+import fsSync from 'node:fs';
 import http from 'http';
 import os from 'os';
 import path from 'path';
@@ -19,7 +20,7 @@ const width = 960;
 const height = 720;
 
 // const FILE_PATTERN = new RegExp('.*');
-const FILE_PATTERN = new RegExp('.*media\\-flash\\..*');
+const FILE_PATTERN = new RegExp('\\\\temp\\.');
 
 let configFileName;
 configFileName = 'testconfig.json';

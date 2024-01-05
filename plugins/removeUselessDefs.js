@@ -50,12 +50,27 @@ export const fn = () => {
  * @type {(node: XastElement, usefulNodes: XastElement[]) => void}
  */
 const collectUsefulNodes = (node, usefulNodes) => {
+  /**
+   * Determine whether the node or any of its children is useful.
+   * @param {XastElement} node
+   * @returns boolean
+   */
+  function isUseful(node) {
+    if (node.attributes.id != null || node.name === 'style') {
+      return true;
+    }
+    for (const child of node.children) {
+      if (child.type === 'element' && isUseful(child)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   for (const child of node.children) {
     if (child.type === 'element') {
-      if (child.attributes.id != null || child.name === 'style') {
+      if (isUseful(child)) {
         usefulNodes.push(child);
-      } else {
-        collectUsefulNodes(child, usefulNodes);
       }
     }
   }

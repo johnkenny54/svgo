@@ -1,4 +1,4 @@
-Don't remove non-rendering elements if children have descendants with IDs.
+Don't remove defs elements if children have descendants with IDs.
 
 ===
 
@@ -7,13 +7,13 @@ Don't remove non-rendering elements if children have descendants with IDs.
     <filter id="a">
         <feGaussianBlur stdDeviation="5" />
     </filter>
-    <symbol>
+    <defs>
         <g style="filter:url(#a)">
             <linearGradient id="b">
                 <stop offset="5%" stop-color="gold" />
             </linearGradient>
         </g>
-    </symbol>
+    </defs>
 </svg>
 
 @@@
@@ -23,11 +23,11 @@ Don't remove non-rendering elements if children have descendants with IDs.
     <filter id="a">
         <feGaussianBlur stdDeviation="5"/>
     </filter>
-    <symbol>
+    <defs>
         <g style="filter:url(#a)">
             <linearGradient id="b">
                 <stop offset="5%" stop-color="gold"/>
             </linearGradient>
         </g>
-    </symbol>
+    </defs>
 </svg>

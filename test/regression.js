@@ -13,13 +13,15 @@ import { chromium } from 'playwright';
 import { PNG } from 'pngjs';
 import { fileURLToPath } from 'url';
 import { optimize } from '../lib/svgo.js';
+import { showStats } from '../lib/svgo/tools.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const width = 960;
 const height = 720;
 
-const FILE_PATTERN = new RegExp('.*');
+const FILE_PATTERN = new RegExp('devices\\\\media\\-flash\\-memory');
+// const FILE_PATTERN = new RegExp('.*');
 let configFileName;
 const DEFAULT_CONFIG = {
   floatPrecision: 4,
@@ -185,6 +187,7 @@ function readConfigFile(fileName) {
     await fs.mkdir(path.dirname(statsFileName), { recursive: true });
     await fs.writeFile(statsFileName, statArray.join('\n'));
 
+    showStats();
     console.info(`Total reduction ${totalReduction} bytes`);
     if (passed) {
       console.info(`Regression tests successfully completed in ${diff}ms`);

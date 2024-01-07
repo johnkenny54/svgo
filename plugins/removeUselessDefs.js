@@ -15,7 +15,10 @@ export const description = 'removes elements in <defs> without id';
  *
  * @type {import('./plugins-types.js').Plugin<'removeUselessDefs'>}
  */
-export const fn = () => {
+export const fn = (ast, params, info, styleSheet) => {
+  console.log(
+    'calling removeUselessDefs.fn - ' + JSON.stringify(styleSheet.rules),
+  );
   return {
     element: {
       enter: (node, parentNode) => {

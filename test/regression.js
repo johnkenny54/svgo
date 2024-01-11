@@ -33,7 +33,6 @@ const screenshotOptions = {
   omitBackground: true,
   clip: { x: 0, y: 0, width, height },
   animations: 'disabled',
-  timeout: 80000,
 };
 
 /**
@@ -51,13 +50,9 @@ const runTests = async (list) => {
   const processFile = async (page, name) => {
     const fileStats = {};
     stats[name.replaceAll('\\', '/')] = fileStats;
-    await page.goto(`http://localhost:5000/original/${name}`, {
-      timeout: 80000,
-    });
+    await page.goto(`http://localhost:5000/original/${name}`);
     const originalBuffer = await page.screenshot(screenshotOptions);
-    await page.goto(`http://localhost:5000/optimized/${name}`, {
-      timeout: 80000,
-    });
+    await page.goto(`http://localhost:5000/optimized/${name}`);
     const optimizedBufferPromise = page.screenshot(screenshotOptions);
 
     const writeDiffs = process.env.NO_DIFF == null;

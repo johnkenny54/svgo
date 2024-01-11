@@ -95,3 +95,18 @@ Jest results (coa tests now passing):
 - FAIL test/plugins/\_transforms.test.js
 - FAIL lib/svgo.test.js
 - FAIL test/plugins/\_index.test.js (6.599 s)
+
+Regression (saved as r-v2.tsv)
+
+- Mismatched: 171
+- Passed: 5351
+- Total reduction 764238454 bytes
+
+All of the files that passed with the no-op version, along with the 3 W3C files that had failed in the no-op version.
+
+This version had 28,026 bytes more compression than the original version.
+
+Two files that passed with the original version are mismatches with this version:
+
+- svgs/oxygen-icons-5.113.0/scalable/actions/small/32x32/view-certificate-sign.svg mismatch
+- svgs/oxygen-icons-5.113.0/scalable/devices/small/48x48/media-optical-dvd.svg mismatch

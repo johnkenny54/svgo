@@ -212,9 +212,10 @@ export const matrixToTransform = (transform, params) => {
     });
   }
 
-  if (r !== 1 || r !== delta) {
-    const sx = invertScale ? -r : r;
-    transforms.push({ name: 'scale', data: [sx, delta / sx] });
+  const sx = invertScale ? -r : r;
+  const sy = delta / sx;
+  if (sx !== 1 || sy !== 1) {
+    transforms.push({ name: 'scale', data: sx === sy ? [sx] : [sx, sy] });
   }
 
   const ac_plus_bd = a * c + b * d;

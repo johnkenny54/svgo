@@ -84,3 +84,14 @@ Regression (saved to r-v1.tsv):
 - Total reduction 763997776 bytes
 
 So something broke from the no-op version.
+
+# Version 2:
+
+Fixed bug with scaling when rotation was 180 degrees. Added 2 test cases.
+
+Jest results (coa tests now passing):
+
+- Tests: 7 failed, 3 skipped, 421 passed, 431 total
+- FAIL test/plugins/\_transforms.test.js
+- FAIL lib/svgo.test.js
+- FAIL test/plugins/\_index.test.js (6.599 s)

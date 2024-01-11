@@ -76,3 +76,11 @@ Jest results:
 - FAIL lib/svgo.test.js
 - FAIL test/coa/\_index.test.js
 - FAIL test/plugins/\_index.test.js (5.356 s)
+
+Regression (saved to r-v1.tsv):
+
+- Mismatched: 315
+- Passed: 5207
+- Total reduction 763997776 bytes
+
+So something broke from the no-op version.

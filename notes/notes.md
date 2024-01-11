@@ -64,3 +64,15 @@ Goal is to add functionality to matrixToTransform() so:
   problems with matrixToTransform().
 - All of the tests that passed when matrixToTransform() was a no-op continue to pass.
 - As much size reduction as possible is restored.
+
+# Version 1:
+
+Added basic functionality. Test case 1 has fewer failing items.
+
+Jest results:
+
+- Tests: 9 failed, 3 skipped, 417 passed, 429 total
+- FAIL test/plugins/\_transforms.test.js
+- FAIL lib/svgo.test.js
+- FAIL test/coa/\_index.test.js
+- FAIL test/plugins/\_index.test.js (5.356 s)

@@ -172,16 +172,62 @@ const mth = {
  */
 export const matrixToTransform = (transform, params) => {
   //   const floatPrecision = params.floatPrecision;
-  //   const data = transform.data;
-  //   const transforms = [];
+  const data = transform.data;
 
-  //   // [..., ..., ..., ..., tx, ty] → translate(tx, ty)
-  //   if (data[4] || data[5]) {
-  //     transforms.push({
-  //       name: 'translate',
-  //       data: data.slice(4, data[5] ? 6 : 5),
-  //     });
-  //   }
+  // Where applicable, variables are named in accordance with the frederic-wang document referenced above.
+  const a = data[0];
+  const b = data[1];
+  const c = data[2];
+  const d = data[3];
+  const e = data[4];
+  const f = data[5];
+  const delta = a * d - b * c;
+  if (delta === 0) {
+    return [transform];
+  }
+  const r = Math.hypot(a, b);
+  if (r === 0) {
+    return [transform];
+  }
+  const angle_cos = a / r;
+  const transforms = [];
+
+  // [..., ..., ..., ..., tx, ty] → translate(tx, ty)
+  if (e || f) {
+    transforms.push({
+      name: 'translate',
+      data: [e, f],
+    });
+  }
+
+  let invertScale = false;
+  if (angle_cos === -1) {
+    // 180 degree angle; leave off the rotate, but invert the scaling.
+    invertScale = true;
+  } else if (angle_cos !== 1) {
+    const degrees = mth.deg(Math.acos(angle_cos));
+    transforms.push({
+      name: 'rotate',
+      data: [b < 0 ? -degrees : degrees],
+    });
+  }
+
+  if (r !== 1 || r !== delta) {
+    const sx = invertScale ? -r : r;
+    transforms.push({ name: 'scale', data: [sx, delta / sx] });
+  }
+
+  const ac_plus_bd = a * c + b * d;
+  if (ac_plus_bd) {
+    transforms.push({
+      name: 'skewX',
+      data: [mth.deg(Math.atan(ac_plus_bd / (a * a + b * b)))],
+    });
+  }
+
+  if (transforms.length) {
+    return transforms;
+  }
 
   //   let sx = toFixed(Math.hypot(data[0], data[1]), params.transformPrecision);
   //   let sy = toFixed(

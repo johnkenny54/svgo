@@ -212,6 +212,40 @@ export const matrixToTransform = (transform, params) => {
     });
   }
 
+  // If there is a translation and a rotation, merge them.
+  if (transforms.length === 2) {
+    // From https://www.w3.org/TR/SVG11/coords.html#TransformAttribute:
+    // We have translate(tx,ty) rotate(a). This is equivalent to [cos(a) sin(a) -sin(a) cos(a) tx ty].
+    //
+    // rotate(a,cx,cy) is equivalent to translate(cx, cy) rotate(a) translate(-cx, -cy).
+    // Multiplying the right side gives the matrix
+    //   [cos(a) sin(a) -sin(a) cos(a)
+    //   -cx * cos(a) + cy * sin(a) + cx
+    //   -cx * sin(a) - cy * cos(a) + cy
+    // ]
+    //
+    // We need cx and cy such that
+    //   tx = -cx * cos(a) + cy * sin(a) + cx
+    //   ty = -cx * sin(a) - cy * cos(a) + cy
+    //
+    // Solving these for cx and cy gives
+    //   cy = (d * ty + e * tx)/(d^2 + e^2)
+    //   cx = (tx - e * cy) / d
+    // where d = 1 - cos(a) and e = sin(a)
+
+    transforms.shift();
+    const rotate = transforms[0].data;
+    const a = (rotate[0] * Math.PI) / 180;
+    const d = 1 - Math.cos(a);
+    const e = Math.sin(a);
+    const d2_plus_e2 = d * d + e * e;
+    const tx = data[4];
+    const ty = data[5];
+    const cy = (d * ty + e * tx) / d2_plus_e2;
+    const cx = (tx - e * cy) / d;
+    rotate.push(cx, cy);
+  }
+
   const sx = invertScale ? -r : r;
   const sy = delta / sx;
   if (sx !== 1 || sy !== 1) {

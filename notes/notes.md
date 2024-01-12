@@ -110,3 +110,13 @@ Two files that passed with the original version are mismatches with this version
 
 - svgs/oxygen-icons-5.113.0/scalable/actions/small/32x32/view-certificate-sign.svg mismatch
 - svgs/oxygen-icons-5.113.0/scalable/devices/small/48x48/media-optical-dvd.svg mismatch
+
+# Version 3:
+
+Added logic to merge translate and rotate. Updated test case expected results.
+
+Jest results:
+
+- Tests: 4 failed, 3 skipped, 424 passed, 431 total
+- FAIL lib/svgo.test.js
+- FAIL test/plugins/\_index.test.js

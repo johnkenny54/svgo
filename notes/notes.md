@@ -1,4 +1,4 @@
-Baseline test results saved to r-baseline.tsv:
+Baseline test results with original version saved to r-baseline.tsv:
 
 - Mismatched: 194
 - Passed: 5328
@@ -96,7 +96,7 @@ Jest results (coa tests now passing):
 - FAIL lib/svgo.test.js
 - FAIL test/plugins/\_index.test.js (6.599 s)
 
-Regression (saved as r-v2.tsv)
+Regression (saved as r-v2.tsv):
 
 - Mismatched: 171
 - Passed: 5351
@@ -120,3 +120,13 @@ Jest results:
 - Tests: 4 failed, 3 skipped, 424 passed, 431 total
 - FAIL lib/svgo.test.js
 - FAIL test/plugins/\_index.test.js
+
+Regression (saved as r-v3.tsv):
+
+- Mismatched: 171
+- Passed: 5351
+- Total reduction 764363644 bytes
+
+This version had 153,216 bytes more compression than the original version, and 125,190 more than version 2.
+
+Mismatch results were identical to version 2.

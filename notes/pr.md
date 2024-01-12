@@ -1,3 +1,10 @@
+The matrixToTransform() function in \_transforms.js was causing mismatches in some of the regression tests. I tracked this down to
+some conditions where the code was trying to move the scale() transform to a different place. I tried fixing the original code, but the
+scale adjustments were woven all through the function, so I ended up rewriting it.
+
+The new version fixes 23 regression errors compared to the original version, and reduces the compressed file size of the regression files
+by an additional 153,216 bytes over the original version.
+
 Changes to the code:
 
 - The new code closely follows the algorithm referenced in the original code at
@@ -17,4 +24,4 @@ Many of the expected test results changed:
 - in general, any expected result which starts with scale followed by a rotate will change
 - some expected results were replaced by equivalent non-matrix transforms
 - some transforms which were optimized by the previous code are not optimized by this code, and expected result is
-  now a matrix
+  now a matrix (generally the original matrix unchanged)

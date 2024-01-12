@@ -1,11 +1,20 @@
-Changes to expected test results:
+Changes to the code:
+
+- The new code closely follows the algorithm referenced in the original code at
+  https://frederic-wang.fr/decomposition-of-2d-transform-matrices.html.
+- The algorithm referenced above always decomposes a matrix in the form translate()rotate()scale()skewX(). The original code
+  sometimes tried to move the scale() in front of the rotate(), but this is not always safe. The new code always preserves the
+  decomposition order.
+- The code to convert transform(tx,ty)rotate(a) to rotate(a,cx,cy) has been rewritten. This code is independent of the decomposition algorithm.
+  There are comments in the code describing the calculation.
+- The new version does not do any rounding, so no longer uses params.floatPrecision or params.transformPrecision.
+- There are some optimizations performed by the original code that are not in the current code. These could be
+  added in the future as special cases, but given that this version reduces regression errors and reduces optimized file size compared to
+  the original code, it would be best to keep this version as simple as possible.
+
+Many of the expected test results changed:
 
 - in general, any expected result which starts with scale followed by a rotate will change
-- \_transforms.test.js:
-  - changed **scale(1,-1)rotate(-90)** to **rotate(90)scale(1,-1)** - these are equivalent
-  - changed **scale(99,1)rotate(-90)** to **rotate(-90)scale(1,99)** - these are equivalent
-- convertTransform.01.svg.txt:
-  - changed all `<g>` elements to `<rect>` so they display
-  - changed all **rotate(-45 261.728 -252.175)** to **rotate(-45 261.757 -252.243)** - minor difference in result with new algorithm, but I
-    did not see a visual difference
-  - changed scale(2)rotate(-45 130.898 -126.14) to rotate(-45 261.757 -252.243)scale(2)
+- some expected results were replaced by equivalent non-matrix transforms
+- some transforms which were optimized by the previous code are not optimized by this code, and expected result is
+  now a matrix

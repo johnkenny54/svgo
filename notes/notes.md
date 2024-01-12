@@ -129,4 +129,6 @@ Regression (saved as r-v3.tsv):
 
 This version had 153,216 bytes more compression than the original version, and 125,190 more than version 2.
 
-Mismatch results were identical to version 2.
+Mismatch results were identical to version 2. The two files that were mismatched in this version but passed in the original
+version pass in this version if the default transformPrecision is changed from 5 to 6 in convertTransform.js, so they appear to be rounding
+issues elsewhere in the plugin.

@@ -3,7 +3,7 @@ some conditions where the code was trying to move the scale() transform to a dif
 scale adjustments were woven all through the function, so I ended up rewriting it.
 
 The new version fixes 23 regression errors compared to the original version, and reduces the compressed file size of the regression files
-by an additional 153,216 bytes over the original version.
+by an additional 153,223 bytes over the original version.
 
 Changes to the code:
 
@@ -17,7 +17,7 @@ Changes to the code:
 - The new version does not do any rounding, so no longer uses params.floatPrecision or params.transformPrecision.
 - There are some optimizations performed by the original code that are not in the current code. These could be
   added in the future as special cases, but given that this version reduces regression errors and reduces optimized file size compared to
-  the original code, it would be best to keep this version as simple as possible.
+  the original code, it would be best to keep this initial version as simple as possible.
 
 Many of the expected test results changed:
 

@@ -132,3 +132,15 @@ This version had 153,216 bytes more compression than the original version, and 1
 Mismatch results were identical to version 2. The two files that were mismatched in this version but passed in the original
 version pass in this version if the default transformPrecision is changed from 5 to 6 in convertTransform.js, so they appear to be rounding
 issues elsewhere in the plugin.
+
+# matrixToTransform branch:
+
+This included minor cleanup from version 3.
+
+Regression (saved as r-pr1.tsv):
+
+- Mismatched: 208
+- Passed: 5314
+- Total reduction 764364785 bytes
+
+Must have introduced a bug in the cleanup.

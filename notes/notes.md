@@ -144,3 +144,15 @@ Regression (saved as r-pr1.tsv):
 - Total reduction 764364785 bytes
 
 Must have introduced a bug in the cleanup.
+
+# PR version 2:
+
+Fixed bug.
+
+Regression (saved as r-pr2.tsv):
+
+- Mismatched: 171
+- Passed: 5351
+- Total reduction 764363651 bytes
+
+So 153,223 bytes more compression than original.

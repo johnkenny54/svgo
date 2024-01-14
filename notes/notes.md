@@ -156,3 +156,16 @@ Regression (saved as r-pr2.tsv):
 - Total reduction 764363651 bytes
 
 So 153,223 bytes more compression than original.
+
+# PR version 3:
+
+Cleaned up variable names, used intermediate values to reduce trig in merge of translate()rotate().
+
+Regression (saved as r-pr3.tsv):
+
+- Mismatched: 171
+- Passed: 5351
+- Total pixel difference 11504
+- Total reduction 764363651 bytes
+
+No change in mismatches or compression.

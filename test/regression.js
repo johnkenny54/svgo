@@ -66,6 +66,7 @@ const runTests = async (list) => {
       width,
       height,
     );
+    fileStats.pixels = matched;
     // ignore small aliasing issues
     if (matched <= 4) {
       console.info(`${name} is passed`);
@@ -162,16 +163,24 @@ function readConfigFile(fileName) {
 
     // Write statistics.
     const statArray = [
-      ['Name', 'Result', 'Orig Len', 'Opt Len', 'Reduction'].join('\t'),
+      ['Name', 'Result', 'Orig Len', 'Opt Len', 'Reduction', 'Pixels'].join(
+        '\t',
+      ),
     ];
     let totalReduction = 0;
+    let totalPixels = 0;
     for (const name of Object.keys(stats).sort()) {
       const fileStats = stats[name];
       const orig = fileStats.lengthOrig;
       const opt = fileStats.lengthOpt;
       const reduction = orig - opt;
       totalReduction += reduction;
-      statArray.push([name, fileStats.result, orig, opt, reduction].join('\t'));
+      totalPixels += fileStats.pixels;
+      statArray.push(
+        [name, fileStats.result, orig, opt, reduction, fileStats.pixels].join(
+          '\t',
+        ),
+      );
     }
     const statsFileName = `tmp/regression-stats-${new Date()
       .toISOString()
@@ -180,6 +189,7 @@ function readConfigFile(fileName) {
     await fs.mkdir(path.dirname(statsFileName), { recursive: true });
     await fs.writeFile(statsFileName, statArray.join('\n'));
 
+    console.info(`Total pixel difference ${totalPixels}`);
     console.info(`Total reduction ${totalReduction} bytes`);
     if (passed) {
       console.info(`Regression tests successfully completed in ${diff}ms`);

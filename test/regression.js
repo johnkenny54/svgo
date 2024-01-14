@@ -49,7 +49,7 @@ const runTests = async (list) => {
    */
   const processFile = async (page, name) => {
     const fileStats = {};
-    stats[name.replaceAll('\\', '/')] = fileStats;
+    stats[name.replace(/\\/g, '/')] = fileStats;
     await page.goto(`http://localhost:5000/original/${name}`);
     const originalBuffer = await page.screenshot(screenshotOptions);
     await page.goto(`http://localhost:5000/optimized/${name}`);
@@ -115,7 +115,7 @@ const runTests = async (list) => {
 
 function readConfigFile(fileName) {
   const data = fsSync.readFileSync(fileName);
-  const json = JSON.parse(data);
+  const json = JSON.parse(data.toString());
   return json;
 }
 
@@ -184,7 +184,7 @@ function readConfigFile(fileName) {
     }
     const statsFileName = `tmp/regression-stats-${new Date()
       .toISOString()
-      .replaceAll(':', '')
+      .replace(/:/g, '')
       .substring(0, 17)}.tsv`;
     await fs.mkdir(path.dirname(statsFileName), { recursive: true });
     await fs.writeFile(statsFileName, statArray.join('\n'));

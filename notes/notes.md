@@ -169,3 +169,24 @@ Regression (saved as r-pr3.tsv):
 - Total reduction 764363651 bytes
 
 No change in mismatches or compression.
+
+# 3.2-lr
+
+Original implementation (as of SVGO 3.2), with sx/sy not rounded at beginning of matrixToTransform().
+
+Regression (saved as r-3.2-lr.tsv)
+
+- Mismatched: 173
+- Passed: 5349
+- Total pixel difference 11556
+- Total reduction 764405630 bytes
+
+Mismatch differences with r-pr3.tsv:
+
+```
+svgs/oxygen-icons-5.113.0/scalable/actions/small/32x32/view-certificate-sign.svg mismatch
+svgs/oxygen-icons-5.113.0/scalable/apps/klipper.svg pass
+svgs/oxygen-icons-5.113.0/scalable/apps/small/22x22/klipper.svg pass
+svgs/oxygen-icons-5.113.0/scalable/apps/small/32x32/klipper.svg pass
+
+```

@@ -181,6 +181,8 @@ Regression (saved as r-3.2-lr.tsv)
 - Total pixel difference 11556
 - Total reduction 764405630 bytes
 
+So 195,202 bytes more compression than original and 41,979 more compression than PR version 3.
+
 Mismatch differences with r-pr3.tsv:
 
 ```

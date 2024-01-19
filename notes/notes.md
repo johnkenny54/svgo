@@ -212,3 +212,10 @@ Mismatch differences:
 svgs/oxygen-icons-5.113.0/scalable/actions/small/32x32/view-certificate-sign.svg pass
 svgs/oxygen-icons-5.113.0/scalable/apps/hidef/kmail2.svg mismatch
 svgs/oxygen-icons-5.113.0/scalable/apps/kmail2.svg mismatch
+
+# Baseline - convertToShorts = false (saved as r-disabled.tsv):
+
+- Mismatched: 174
+- Passed: 5348
+- Total pixel difference 12087
+- Total reduction 763918182 bytes

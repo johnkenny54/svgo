@@ -192,3 +192,23 @@ svgs/oxygen-icons-5.113.0/scalable/apps/small/22x22/klipper.svg pass
 svgs/oxygen-icons-5.113.0/scalable/apps/small/32x32/klipper.svg pass
 
 ```
+
+# PR refactored version 1 (saved as r-rf1.tsv):
+
+Initial refactor of PR branch.
+
+- Mismatched: 172
+- Passed: 5350
+- Total pixel difference 11533
+- Total reduction 764476085 bytes
+
+Differences from PR v 3:
+
+Pixel difference: increased by 29
+Compression: improved by 112,434 bytes
+
+Mismatch differences:
+
+svgs/oxygen-icons-5.113.0/scalable/actions/small/32x32/view-certificate-sign.svg pass
+svgs/oxygen-icons-5.113.0/scalable/apps/hidef/kmail2.svg mismatch
+svgs/oxygen-icons-5.113.0/scalable/apps/kmail2.svg mismatch

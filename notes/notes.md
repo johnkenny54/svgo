@@ -193,7 +193,7 @@ svgs/oxygen-icons-5.113.0/scalable/apps/small/32x32/klipper.svg pass
 
 ```
 
-# PR refactored version 1 (saved as r-rf1.tsv):
+# PR version 4 (saved as r-pr4.tsv):
 
 Initial refactor of PR branch.
 

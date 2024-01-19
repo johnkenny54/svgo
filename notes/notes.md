@@ -9,6 +9,7 @@ Test results after making matrixToTransform() a no-op (r-no-op.tsv):
 
 - Mismatched: 174
 - Passed: 5348
+- Total pixel difference 12087
 - Total reduction 763934726 bytes
 
 25 regressions changed from mismatch to pass, 5 changed from pass to mismatch, and optimized file size increased by 275,702 bytes.

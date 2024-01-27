@@ -224,3 +224,10 @@ svgs/oxygen-icons-5.113.0/scalable/apps/kmail2.svg mismatch
 - Passed: 5348
 - Total pixel difference 12087
 - Total reduction 763918182 bytes
+
+# PR version 4 w/ both QR decompositions (saved as r-pr4a.tsv):
+
+* Mismatched: 172
+* Passed: 5350
+* Total pixel difference 11533
+* Total reduction 764481658 bytes

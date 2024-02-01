@@ -4,7 +4,6 @@
  */
 
 import fs from 'node:fs/promises';
-import fsSync from 'node:fs';
 import http from 'http';
 import os from 'os';
 import path from 'path';
@@ -18,13 +17,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const width = 960;
 const height = 720;
-
-const FILE_PATTERN = new RegExp('.*');
-let configFileName;
-const DEFAULT_CONFIG = {
-  floatPrecision: 4,
-};
-const CONFIG = configFileName ? readConfigFile(configFileName) : DEFAULT_CONFIG;
 
 const stats = {};
 
@@ -91,9 +83,6 @@ const runTests = async (list) => {
     let item;
     const page = await context.newPage();
     while ((item = list.pop())) {
-      if (!FILE_PATTERN.test(item)) {
-        continue;
-      }
       await processFile(page, item);
     }
     await page.close();
@@ -112,12 +101,6 @@ const runTests = async (list) => {
   console.info(`Passed: ${passed}`);
   return mismatched === 0;
 };
-
-function readConfigFile(fileName) {
-  const data = fsSync.readFileSync(fileName);
-  const json = JSON.parse(data.toString());
-  return json;
-}
 
 (async () => {
   try {
@@ -143,7 +126,9 @@ function readConfigFile(fileName) {
         return;
       }
       if (req.url.startsWith('/optimized/')) {
-        const optimized = optimize(file, CONFIG);
+        const optimized = optimize(file, {
+          floatPrecision: 4,
+        });
         stats[statsName].lengthOpt = optimized.data.length;
 
         res.setHeader('Content-Type', 'image/svg+xml');

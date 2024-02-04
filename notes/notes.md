@@ -227,16 +227,23 @@ svgs/oxygen-icons-5.113.0/scalable/apps/kmail2.svg mismatch
 
 # PR version 4 w/ both QR decompositions (saved as r-pr4a.tsv):
 
-* Mismatched: 172
-* Passed: 5350
-* Total pixel difference 11533
-* Total reduction 764481658 bytes
+- Mismatched: 172
+- Passed: 5350
+- Total pixel difference 11533
+- Total reduction 764481658 bytes
 
 # PR version 5 - fix for rotate(180) scale inversion (saved as r-pr5.tsv)
 
-* Mismatched: 172
-* Passed: 5350
-* Total pixel difference 11518
-* Total reduction 764481236 bytes
+- Mismatched: 172
+- Passed: 5350
+- Total pixel difference 11518
+- Total reduction 764481236 bytes
 
 No change in pass/fail, reduction in pixel mismatches, compression reduced by 422 bytes.
+
+# PR version 6 - fix bug copying decomposition in optimize() (saved as r-pr6.tsv)
+
+- Mismatched: 171
+- Passed: 5351
+- Total pixel difference 11513
+- Total reduction 764481019 bytes

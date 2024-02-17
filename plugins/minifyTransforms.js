@@ -100,6 +100,8 @@ function minifyTransform(t) {
   switch (t.name) {
     case 'matrix':
       return minifyMatrix(t.data);
+    case 'rotate':
+      return minifyRotate(t.data);
   }
   return t;
 }
@@ -115,6 +117,24 @@ function minifyMatrix(data) {
     return { name: 'scale', data: [data[0], data[3]] };
   }
   return { name: 'matrix', data: data };
+}
+
+/**
+ * @param {number[]} data
+ */
+function minifyRotate(data) {
+  const cx = data.length === 1 ? 0 : data[1];
+  const cy = data.length === 1 ? 0 : data[2];
+  if (cx === 0 && cy === 0) {
+    switch (data[0]) {
+      case 180:
+        return { name: 'scale', data: [-1] };
+      case 0:
+      case 360:
+        return;
+    }
+  }
+  return { name: 'rotate', data: data };
 }
 
 /**
@@ -140,6 +160,15 @@ function jsToString(transformJS) {
    */
   function minifyData(transform) {
     switch (transform.name) {
+      case 'rotate':
+        if (
+          transform.data.length > 1 &&
+          transform.data[1] === 0 &&
+          transform.data[2] === 0
+        ) {
+          return transform.data.slice(0, 1);
+        }
+        break;
       case 'scale':
         if (transform.data[0] === transform.data[1]) {
           return transform.data.slice(0, 1);

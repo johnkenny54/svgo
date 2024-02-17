@@ -75,20 +75,6 @@ function mergeTransforms(transforms) {
     const next = transforms[index + 1];
     if (next) {
       switch (transform.name) {
-        case 'scale':
-          // If next one is a scale, merge them.
-          if (next.name === 'scale') {
-            const sx = transform.data[0] * next.data[0];
-            const sy =
-              (transform.data.length > 1
-                ? transform.data[1]
-                : transform.data[0]) *
-              (next.data.length > 1 ? next.data[1] : next.data[0]);
-            merged.push({ name: 'scale', data: [sx, sy] });
-            index++;
-            continue;
-          }
-          break;
         case 'translate':
           // If next one is a translate, merge them.
           if (next.name === 'translate') {
@@ -130,6 +116,14 @@ function minifyMatrix(data) {
   }
   if (data[1] === 0 && data[2] === 0 && data[4] === 0 && data[5] === 0) {
     return { name: 'scale', data: [data[0], data[3]] };
+  }
+  if (data[0] === 0 && data[3] === 0 && data[4] === 0 && data[5] === 0) {
+    if (
+      (data[1] === 1 && data[2] === -1) ||
+      (data[1] === -1 && data[2] === 1)
+    ) {
+      return { name: 'rotate', data: [data[1] === 1 ? 90 : -90] };
+    }
   }
   return { name: 'matrix', data: data };
 }

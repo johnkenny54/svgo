@@ -12,6 +12,7 @@ import { chromium } from 'playwright';
 import { PNG } from 'pngjs';
 import { fileURLToPath } from 'url';
 import { optimize } from '../lib/svgo.js';
+import { loadConfig } from '../lib/svgo-node.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -103,6 +104,7 @@ const runTests = async (list) => {
 };
 
 (async () => {
+  const config = await loadConfig('./plugins/safe-default.js');
   try {
     const start = process.hrtime.bigint();
     const fixturesDir = path.join(__dirname, 'regression-fixtures');
@@ -126,9 +128,7 @@ const runTests = async (list) => {
         return;
       }
       if (req.url.startsWith('/optimized/')) {
-        const optimized = optimize(file, {
-          floatPrecision: 4,
-        });
+        const optimized = optimize(file, config);
         stats[statsName].lengthOpt = optimized.data.length;
 
         res.setHeader('Content-Type', 'image/svg+xml');

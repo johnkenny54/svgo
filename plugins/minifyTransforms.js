@@ -44,12 +44,22 @@ export const fn = () => {
 function minifyTransforms(transforms) {
   const parsed = transform2js(transforms);
 
-  const minified = [];
+  // First minify them individually.
+  let minified = [];
   for (const transform of parsed) {
     const t = minifyTransform(transform);
     if (t) {
       minified.push(t);
     }
+  }
+
+  // If there is more than one, try to merge them.
+  while (minified.length > 1) {
+    const merged = mergeTransforms(minified);
+    if (merged.length === minified.length) {
+      break;
+    }
+    minified = merged;
   }
 
   return jsToString(minified);
@@ -126,4 +136,32 @@ function minifyNumber(n) {
     return n.toExponential();
   }
   return removeLeadingZero(n);
+}
+
+/**
+ * @param {TransformItem[]} transforms
+ */
+function mergeTransforms(transforms) {
+  const merged = [];
+  for (let index = 0; index < transforms.length; index++) {
+    const transform = transforms[index];
+    const next = transforms[index + 1];
+    if (next) {
+      switch (transform.name) {
+        case 'translate':
+          // If next one is a translate, merge them.
+          if (next.name === 'translate') {
+            const x = transform.data[0] + next.data[0];
+            const y =
+              (transform.data.length > 1 ? transform.data[1] : 0) +
+              (next.data.length > 1 ? next.data[1] : 0);
+            merged.push({ name: 'translate', data: [x, y] });
+            index++;
+            continue;
+          }
+      }
+    }
+    merged.push(transform);
+  }
+  return merged;
 }

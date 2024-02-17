@@ -66,6 +66,34 @@ function minifyTransforms(transforms) {
 }
 
 /**
+ * @param {TransformItem[]} transforms
+ */
+function mergeTransforms(transforms) {
+  const merged = [];
+  for (let index = 0; index < transforms.length; index++) {
+    const transform = transforms[index];
+    const next = transforms[index + 1];
+    if (next) {
+      switch (transform.name) {
+        case 'translate':
+          // If next one is a translate, merge them.
+          if (next.name === 'translate') {
+            const x = transform.data[0] + next.data[0];
+            const y =
+              (transform.data.length > 1 ? transform.data[1] : 0) +
+              (next.data.length > 1 ? next.data[1] : 0);
+            merged.push({ name: 'translate', data: [x, y] });
+            index++;
+            continue;
+          }
+      }
+    }
+    merged.push(transform);
+  }
+  return merged;
+}
+
+/**
  * @param {TransformItem} t
  */
 function minifyTransform(t) {
@@ -82,6 +110,9 @@ function minifyTransform(t) {
 function minifyMatrix(data) {
   if (data[0] === 1 && data[1] === 0 && data[2] === 0 && data[3] === 1) {
     return minifyTranslate([data[4], data[5]]);
+  }
+  if (data[1] === 0 && data[2] === 0 && data[4] === 0 && data[5] === 0) {
+    return { name: 'scale', data: [data[0], data[3]] };
   }
   return { name: 'matrix', data: data };
 }
@@ -109,10 +140,16 @@ function jsToString(transformJS) {
    */
   function minifyData(transform) {
     switch (transform.name) {
+      case 'scale':
+        if (transform.data[0] === transform.data[1]) {
+          return transform.data.slice(0, 1);
+        }
+        break;
       case 'translate':
         if (transform.data[1] === 0) {
           return transform.data.slice(0, 1);
         }
+        break;
     }
     return transform.data;
   }
@@ -136,32 +173,4 @@ function minifyNumber(n) {
     return n.toExponential();
   }
   return removeLeadingZero(n);
-}
-
-/**
- * @param {TransformItem[]} transforms
- */
-function mergeTransforms(transforms) {
-  const merged = [];
-  for (let index = 0; index < transforms.length; index++) {
-    const transform = transforms[index];
-    const next = transforms[index + 1];
-    if (next) {
-      switch (transform.name) {
-        case 'translate':
-          // If next one is a translate, merge them.
-          if (next.name === 'translate') {
-            const x = transform.data[0] + next.data[0];
-            const y =
-              (transform.data.length > 1 ? transform.data[1] : 0) +
-              (next.data.length > 1 ? next.data[1] : 0);
-            merged.push({ name: 'translate', data: [x, y] });
-            index++;
-            continue;
-          }
-      }
-    }
-    merged.push(transform);
-  }
-  return merged;
 }

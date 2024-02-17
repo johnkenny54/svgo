@@ -1,3 +1,10 @@
+import { transform2js } from './_transforms.js';
+import { removeLeadingZero } from '../lib/svgo/tools.js';
+
+/**
+ * @typedef {{ name: string, data: number[] }} TransformItem
+ */
+
 export const name = 'minifyTransforms';
 export const description = 'Make transform expressions as short as possible';
 
@@ -35,6 +42,24 @@ export const fn = () => {
  * @returns {string}
  */
 function minifyTransform(t) {
-  console.log('XX: ' + t);
-  return t;
+  const parsed = transform2js(t);
+  return js2transform(parsed);
+}
+
+/**
+ * Convert transforms JS representation to string.
+ *
+ * @param {TransformItem[]} transformJS
+ * @returns {string}
+ */
+function js2transform(transformJS) {
+  const transformString = transformJS
+    .map((transform) => {
+      return `${transform.name}(${transform.data
+        .map((n) => removeLeadingZero(n))
+        .join(' ')})`;
+    })
+    .join('');
+
+  return transformString;
 }

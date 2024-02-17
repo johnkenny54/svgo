@@ -110,10 +110,20 @@ function jsToString(transformJS) {
   const transformString = transformJS
     .map((transform) => {
       return `${transform.name}(${minifyData(transform)
-        .map((n) => removeLeadingZero(n))
+        .map((n) => minifyNumber(n))
         .join(' ')})`;
     })
     .join('');
 
   return transformString;
+}
+
+/**
+ * @param {number} n
+ */
+function minifyNumber(n) {
+  if (n !== 0 && n < 0.001 && n > -0.001) {
+    return n.toExponential();
+  }
+  return removeLeadingZero(n);
 }

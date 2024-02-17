@@ -138,7 +138,9 @@ type DefaultPlugins = {
           tags?: boolean;
         };
   };
-  minifyTransforms: void;
+  minifyTransforms: {
+    floatPrecision?: number;
+  };
   moveElemsAttrsToGroup: void;
   moveGroupAttrsToElems: void;
   removeComments: {

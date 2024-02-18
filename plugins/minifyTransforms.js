@@ -55,15 +55,36 @@ export const fn = (root, params) => {
  */
 function minifyTransforms(transforms, params) {
   const parsed = transform2js(transforms);
+  const lossless = minifyTransformsLosslessly(parsed);
+  let shortest = jsToString(lossless);
 
-  const rounded =
-    params.floatPrecision !== undefined && params.matrixPrecision !== undefined
-      ? roundTransforms(parsed, params.floatPrecision, params.matrixPrecision)
-      : parsed;
+  if (
+    params.floatPrecision !== undefined &&
+    params.matrixPrecision !== undefined
+  ) {
+    const rounded = roundTransforms(
+      parsed,
+      params.floatPrecision,
+      params.matrixPrecision,
+    );
+    const roundedOpt = minifyTransformsLosslessly(rounded);
+    const roundedOptStr = jsToString(roundedOpt);
+    if (roundedOptStr.length < shortest.length) {
+      shortest = roundedOptStr;
+    }
+  }
 
+  return shortest;
+}
+
+/**
+ * @param {TransformItem[]} transforms
+ * @returns {TransformItem[]}
+ */
+function minifyTransformsLosslessly(transforms) {
   // First minify them individually.
   let minified = [];
-  for (const transform of rounded) {
+  for (const transform of transforms) {
     const t = minifyTransform(transform);
     if (t) {
       minified.push(t);
@@ -79,7 +100,7 @@ function minifyTransforms(transforms, params) {
     minified = merged;
   }
 
-  return jsToString(minified);
+  return minified;
 }
 
 /**

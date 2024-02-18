@@ -67,6 +67,18 @@ function minifyTransforms(transforms, params) {
       params.matrixPrecision,
     );
     candidates.push(minifyTransformsLosslessly(rounded));
+
+    // If the rounded transform is a matrix, see if we can decompose it.
+    if (rounded.length === 1 && rounded[0].name === 'matrix') {
+      const decomposed = decompose(
+        rounded[0],
+        params.floatPrecision,
+        params.matrixPrecision,
+      );
+      if (decomposed) {
+        candidates.push(minifyTransformsLosslessly(decomposed));
+      }
+    }
   }
 
   let shortest = jsToString(candidates[0]);
@@ -132,6 +144,35 @@ function mergeTransforms(transforms) {
     merged.push(transform);
   }
   return merged;
+}
+
+/**
+ * @param {TransformItem} matrix
+ * @param {number} floatPrecision
+ * @param {number} matrixPrecision
+ * @returns {TransformItem[]|undefined}
+ */
+function decompose(matrix, floatPrecision, matrixPrecision) {
+  const data = matrix.data;
+
+  if (
+    data[4] === 0 &&
+    data[5] === 0 &&
+    data[0] === data[3] &&
+    data[1] === -data[2]
+  ) {
+    // It might be a rotation matrix - check and see.
+    if (toFixed(Math.hypot(data[0], data[1]), matrixPrecision) === 1) {
+      // Find the angle. Average acos and asin, and take the sign of the angle from the sign of the sine.
+      const asin = Math.asin(data[1]);
+      const degrees =
+        ((Math.acos(data[0]) + Math.abs(asin)) * (asin < 0 ? -90 : 90)) /
+        Math.PI;
+      return [{ name: 'rotate', data: [toFixed(degrees, floatPrecision)] }];
+    }
+  }
+
+  return;
 }
 
 /**

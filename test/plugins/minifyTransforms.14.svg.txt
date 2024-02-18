@@ -1,0 +1,17 @@
+Convert matrix to rotate when rounding.
+
+===
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
+    <rect x="0" y="10" width="5" height="8" transform="matrix(0.91566,-0.40195,0.40195,0.91566,0,0)"/>
+</svg>
+
+@@@
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
+    <rect x="0" y="10" width="5" height="8" transform="rotate(-23.7)"/>
+</svg>
+
+@@@
+
+{"floatPrecision":3}

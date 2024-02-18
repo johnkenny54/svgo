@@ -183,11 +183,19 @@ function roundTransforms(transforms, floatPrecision, matrixPrecision) {
   for (const transform of transforms) {
     switch (transform.name) {
       case 'matrix':
+        // Use matrixPrecision on first 4 entries - they tend to be small and multiplied frequently.
         rounded.push({
           name: transform.name,
           data: transform.data.map((n, index) =>
             toFixed(n, index < 4 ? matrixPrecision : floatPrecision),
           ),
+        });
+        break;
+      case 'scale':
+        // Use matrixPrecision since scale is multiplied.
+        rounded.push({
+          name: transform.name,
+          data: transform.data.map((n) => toFixed(n, matrixPrecision)),
         });
         break;
       default:

@@ -1,4 +1,4 @@
-import { transform2js } from './_transforms.js';
+import { transform2js, transformsMultiply } from './_transforms.js';
 import { removeLeadingZero, toFixed } from '../lib/svgo/tools.js';
 
 /**
@@ -201,6 +201,13 @@ function minifyTranslate(data) {
  */
 function roundTransforms(transforms, floatPrecision, matrixPrecision) {
   const rounded = [];
+
+  // If there is more than one transform, multiply them all together before rounding.
+  if (transforms.length > 1) {
+    transforms = [transformsMultiply(transforms)];
+  }
+
+  // TODO: DO WE STILL NEED THE LOOP?
   for (const transform of transforms) {
     switch (transform.name) {
       case 'matrix':

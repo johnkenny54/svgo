@@ -61,17 +61,21 @@ function minifyTransforms(transforms, params) {
     params.floatPrecision !== undefined &&
     params.matrixPrecision !== undefined
   ) {
-    const rounded = roundTransforms(
-      parsed,
+    // If there is more than one transform, multiply them all together before rounding.
+    const transform =
+      parsed.length > 1 ? transformsMultiply(parsed) : parsed[0];
+
+    const rounded = roundTransform(
+      transform,
       params.floatPrecision,
       params.matrixPrecision,
     );
-    candidates.push(minifyTransformsLosslessly(rounded));
+    candidates.push(minifyTransformsLosslessly([rounded]));
 
     // If the rounded transform is a matrix, see if we can decompose it.
-    if (rounded.length === 1 && rounded[0].name === 'matrix') {
+    if (rounded.name === 'matrix') {
       const decomposed = decompose(
-        rounded[0],
+        transform,
         params.floatPrecision,
         params.matrixPrecision,
       );
@@ -238,46 +242,32 @@ function minifyTranslate(data) {
 }
 
 /**
- * @param {TransformItem[]} transforms
+ * @param {TransformItem} transform
  * @param {number} floatPrecision
  * @param {number} matrixPrecision
  */
-function roundTransforms(transforms, floatPrecision, matrixPrecision) {
-  const rounded = [];
-
-  // If there is more than one transform, multiply them all together before rounding.
-  if (transforms.length > 1) {
-    transforms = [transformsMultiply(transforms)];
+function roundTransform(transform, floatPrecision, matrixPrecision) {
+  switch (transform.name) {
+    case 'matrix':
+      // Use matrixPrecision on first 4 entries - they tend to be small and multiplied frequently.
+      return {
+        name: transform.name,
+        data: transform.data.map((n, index) =>
+          toFixed(n, index < 4 ? matrixPrecision : floatPrecision),
+        ),
+      };
+    case 'scale':
+      // Use matrixPrecision since scale is multiplied.
+      return {
+        name: transform.name,
+        data: transform.data.map((n) => toFixed(n, matrixPrecision)),
+      };
+    default:
+      return {
+        name: transform.name,
+        data: transform.data.map((n) => toFixed(n, floatPrecision)),
+      };
   }
-
-  // TODO: DO WE STILL NEED THE LOOP?
-  for (const transform of transforms) {
-    switch (transform.name) {
-      case 'matrix':
-        // Use matrixPrecision on first 4 entries - they tend to be small and multiplied frequently.
-        rounded.push({
-          name: transform.name,
-          data: transform.data.map((n, index) =>
-            toFixed(n, index < 4 ? matrixPrecision : floatPrecision),
-          ),
-        });
-        break;
-      case 'scale':
-        // Use matrixPrecision since scale is multiplied.
-        rounded.push({
-          name: transform.name,
-          data: transform.data.map((n) => toFixed(n, matrixPrecision)),
-        });
-        break;
-      default:
-        rounded.push({
-          name: transform.name,
-          data: transform.data.map((n) => toFixed(n, floatPrecision)),
-        });
-        break;
-    }
-  }
-  return rounded;
 }
 
 /**

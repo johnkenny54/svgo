@@ -55,8 +55,7 @@ export const fn = (root, params) => {
  */
 function minifyTransforms(transforms, params) {
   const parsed = transform2js(transforms);
-  const lossless = minifyTransformsLosslessly(parsed);
-  let shortest = jsToString(lossless);
+  const candidates = [minifyTransformsLosslessly(parsed)];
 
   if (
     params.floatPrecision !== undefined &&
@@ -67,13 +66,16 @@ function minifyTransforms(transforms, params) {
       params.floatPrecision,
       params.matrixPrecision,
     );
-    const roundedOpt = minifyTransformsLosslessly(rounded);
-    const roundedOptStr = jsToString(roundedOpt);
-    if (roundedOptStr.length < shortest.length) {
-      shortest = roundedOptStr;
-    }
+    candidates.push(minifyTransformsLosslessly(rounded));
   }
 
+  let shortest = jsToString(candidates[0]);
+  for (let index = 0; index < candidates.length; index++) {
+    const str = jsToString(candidates[index]);
+    if (str.length < shortest.length) {
+      shortest = str;
+    }
+  }
   return shortest;
 }
 

@@ -3,7 +3,7 @@ import { removeLeadingZero, toFixed } from '../lib/svgo/tools.js';
 
 /**
  * @typedef {{ name: string, data: number[] }} TransformItem
- * @typedef {{floatPrecision?:number}} MinifyParams
+ * @typedef {{floatPrecision?:number,matrixPrecision?:number}} MinifyParams
  */
 
 export const name = 'minifyTransforms';
@@ -15,25 +15,32 @@ export const description = 'Make transform expressions as short as possible';
  * @type {import('./plugins-types.js').Plugin<'minifyTransforms'>}
  */
 export const fn = (root, params) => {
+  const precision = { ...params };
+  if (precision.floatPrecision === undefined) {
+    precision.matrixPrecision = undefined;
+  } else if (precision.matrixPrecision === undefined) {
+    precision.matrixPrecision = precision.floatPrecision + 2;
+  }
+
   return {
     element: {
       enter: (node) => {
         if (node.attributes.transform) {
           node.attributes.transform = minifyTransforms(
             node.attributes.transform,
-            params,
+            precision,
           );
         }
         if (node.attributes.gradientTransform) {
           node.attributes.gradientTransform = minifyTransforms(
             node.attributes.gradientTransform,
-            params,
+            precision,
           );
         }
         if (node.attributes.patternTransform) {
           node.attributes.patternTransform = minifyTransforms(
             node.attributes.patternTransform,
-            params,
+            precision,
           );
         }
       },
@@ -50,8 +57,8 @@ function minifyTransforms(transforms, params) {
   const parsed = transform2js(transforms);
 
   const rounded =
-    params.floatPrecision !== undefined
-      ? roundTransforms(parsed, params.floatPrecision)
+    params.floatPrecision !== undefined && params.matrixPrecision !== undefined
+      ? roundTransforms(parsed, params.floatPrecision, params.matrixPrecision)
       : parsed;
 
   // First minify them individually.
@@ -168,15 +175,28 @@ function minifyTranslate(data) {
 
 /**
  * @param {TransformItem[]} transforms
- * @param {number} precision
+ * @param {number} floatPrecision
+ * @param {number} matrixPrecision
  */
-function roundTransforms(transforms, precision) {
+function roundTransforms(transforms, floatPrecision, matrixPrecision) {
   const rounded = [];
   for (const transform of transforms) {
-    rounded.push({
-      name: transform.name,
-      data: transform.data.map((n) => toFixed(n, precision)),
-    });
+    switch (transform.name) {
+      case 'matrix':
+        rounded.push({
+          name: transform.name,
+          data: transform.data.map((n, index) =>
+            toFixed(n, index < 4 ? matrixPrecision : floatPrecision),
+          ),
+        });
+        break;
+      default:
+        rounded.push({
+          name: transform.name,
+          data: transform.data.map((n) => toFixed(n, floatPrecision)),
+        });
+        break;
+    }
   }
   return rounded;
 }

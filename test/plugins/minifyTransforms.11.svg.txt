@@ -1,9 +1,9 @@
-Basic rounding.
+Basic rounding. Rounding for first 4 elements of matrix should default to floatPrecision + 2.
 
 ===
 
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 100 100">
-    <rect x="0" y="10" width="5" height="8" fill="red" transform="matrix(0,1.1234,-1,0,0,0)"/>
+    <rect x="0" y="10" width="5" height="8" fill="red" transform="matrix(0,1.1234,-1.234567,0,0,0)"/>
     <rect x="0" y="10" width="5" height="8" fill="blue" transform="translate(12.3456)"/>
     <rect x="0" y="10" width="5" height="8" fill="green" transform="rotate(23.4567)"/>
     <rect x="0" y="10" width="5" height="8" fill="yellow" transform="scale(1.2345)"/>
@@ -14,7 +14,7 @@ Basic rounding.
 @@@
 
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 100 100">
-    <rect x="0" y="10" width="5" height="8" fill="red" transform="matrix(0 1.123 -1 0 0 0)"/>
+    <rect x="0" y="10" width="5" height="8" fill="red" transform="matrix(0 1.1234 -1.23457 0 0 0)"/>
     <rect x="0" y="10" width="5" height="8" fill="blue" transform="translate(12.346)"/>
     <rect x="0" y="10" width="5" height="8" fill="green" transform="rotate(23.457)"/>
     <rect x="0" y="10" width="5" height="8" fill="yellow" transform="scale(1.235)"/>

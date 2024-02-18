@@ -128,7 +128,10 @@ const runTests = async (list) => {
         return;
       }
       if (req.url.startsWith('/optimized/')) {
-        const optimized = optimize(file, config);
+        const optimized = optimize(file, {
+          plugins: config.plugins,
+          floatPrecision: undefined,
+        });
         stats[statsName].lengthOpt = optimized.data.length;
 
         res.setHeader('Content-Type', 'image/svg+xml');

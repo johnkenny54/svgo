@@ -159,12 +159,7 @@ function mergeTransforms(transforms) {
 function decompose(matrix, floatPrecision, matrixPrecision) {
   const data = matrix.data;
 
-  if (
-    data[4] === 0 &&
-    data[5] === 0 &&
-    data[0] === data[3] &&
-    data[1] === -data[2]
-  ) {
+  if (data[0] === data[3] && data[1] === -data[2]) {
     // It might be a rotation matrix - check and see.
     if (toFixed(Math.hypot(data[0], data[1]), matrixPrecision) === 1) {
       // Find the angle. asin() is in the range -pi/2 to pi/2, acos from 0 to pi, so adjust accordingly depending on signs.
@@ -186,8 +181,18 @@ function decompose(matrix, floatPrecision, matrixPrecision) {
         }
       }
 
+      const result = [];
+      if (data[4] !== 0 || data[5] !== 0) {
+        const tx = toFixed(data[4], floatPrecision);
+        const ty = toFixed(data[5], floatPrecision);
+        if (tx !== 0 || ty !== 0) {
+          result.push({ name: 'translate', data: [tx, ty] });
+        }
+      }
+
       const degrees = ((acos + asin) * 90) / Math.PI;
-      return [{ name: 'rotate', data: [toFixed(degrees, floatPrecision)] }];
+      result.push({ name: 'rotate', data: [toFixed(degrees, floatPrecision)] });
+      return result;
     }
   }
 

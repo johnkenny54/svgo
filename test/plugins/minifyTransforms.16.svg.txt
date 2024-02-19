@@ -1,0 +1,17 @@
+Convert matrix to translate()rotate().
+
+===
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -50 80 80">
+    <rect x="0" y="10" width="5" height="8" transform="matrix(-.8660254 -.5 .5 -.8660254 3 4)"/>
+</svg>
+
+@@@
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -50 80 80">
+    <rect x="0" y="10" width="5" height="8" transform="translate(3 4)rotate(-150)"/>
+</svg>
+
+@@@
+
+{"floatPrecision":3}

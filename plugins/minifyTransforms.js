@@ -208,6 +208,25 @@ function minifyTransform(t) {
       return minifyMatrix(t.data);
     case 'rotate':
       return minifyRotate(t.data);
+    case 'scale':
+      if (t.data[0] === 1 && (t.data.length === 1 || t.data[1] === 1)) {
+        // This is an identity transform; remove it.
+        return;
+      }
+      break;
+    case 'skewX':
+    case 'skewY':
+      if (t.data[0] === 0) {
+        // This is an identity transform; remove it.
+        return;
+      }
+      break;
+    case 'translate':
+      if (t.data[0] === 0 && (t.data.length === 1 || t.data[1] === 0)) {
+        // This is an identity transform; remove it.
+        return;
+      }
+      break;
   }
   return t;
 }

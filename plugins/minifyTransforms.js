@@ -167,11 +167,26 @@ function decompose(matrix, floatPrecision, matrixPrecision) {
   ) {
     // It might be a rotation matrix - check and see.
     if (toFixed(Math.hypot(data[0], data[1]), matrixPrecision) === 1) {
-      // Find the angle. Average acos and asin, and take the sign of the angle from the sign of the sine.
-      const asin = Math.asin(data[1]);
-      const degrees =
-        ((Math.acos(data[0]) + Math.abs(asin)) * (asin < 0 ? -90 : 90)) /
-        Math.PI;
+      // Find the angle. asin() is in the range -pi/2 to pi/2, acos from 0 to pi, so adjust accordingly depending on signs.
+      // Then average acos and asin.
+      let asin = Math.asin(data[1]);
+      let acos = Math.acos(data[0]);
+      if (data[1] < 0) {
+        // sin is negative, so angle is between -pi and 0.
+        acos = -acos;
+        if (data[0] < 0) {
+          // Both sin and cos are negative, so angle is between -pi and -pi/2.
+          asin = -Math.PI - asin;
+        }
+      } else {
+        // sin is positive, so angle is between 0 and pi.
+        if (data[0] < 0) {
+          // angle is between pi/2 and pi.
+          asin = Math.PI - asin;
+        }
+      }
+
+      const degrees = ((acos + asin) * 90) / Math.PI;
       return [{ name: 'rotate', data: [toFixed(degrees, floatPrecision)] }];
     }
   }

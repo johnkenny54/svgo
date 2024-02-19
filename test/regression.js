@@ -130,7 +130,7 @@ const runTests = async (list) => {
       if (req.url.startsWith('/optimized/')) {
         const optimized = optimize(file, {
           plugins: config.plugins,
-          floatPrecision: 5,
+          floatPrecision: undefined,
         });
         stats[statsName].lengthOpt = optimized.data.length;
 

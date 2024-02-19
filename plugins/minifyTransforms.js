@@ -76,6 +76,7 @@ function minifyTransforms(transforms, params) {
     if (rounded.name === 'matrix') {
       const decomposed = decompose(
         transform,
+        rounded,
         params.floatPrecision,
         params.matrixPrecision,
       );
@@ -151,13 +152,19 @@ function mergeTransforms(transforms) {
 }
 
 /**
- * @param {TransformItem} matrix
+ * @param {TransformItem} originalMatrix
+ * @param {TransformItem} roundedMatrix
  * @param {number} floatPrecision
  * @param {number} matrixPrecision
  * @returns {TransformItem[]|undefined}
  */
-function decompose(matrix, floatPrecision, matrixPrecision) {
-  const data = matrix.data;
+function decompose(
+  originalMatrix,
+  roundedMatrix,
+  floatPrecision,
+  matrixPrecision,
+) {
+  const data = originalMatrix.data;
 
   if (data[0] === data[3] && data[1] === -data[2]) {
     // It might be a rotation matrix - check and see.
@@ -183,16 +190,17 @@ function decompose(matrix, floatPrecision, matrixPrecision) {
 
       const result = [];
       if (data[4] !== 0 || data[5] !== 0) {
-        const tx = toFixed(data[4], floatPrecision);
-        const ty = toFixed(data[5], floatPrecision);
-        if (tx !== 0 || ty !== 0) {
-          result.push({ name: 'translate', data: [tx, ty] });
-        }
+        result.push({ name: 'translate', data: [data[4], data[5]] });
       }
 
       const degrees = ((acos + asin) * 90) / Math.PI;
-      result.push({ name: 'rotate', data: [toFixed(degrees, floatPrecision)] });
-      return result;
+      result.push({ name: 'rotate', data: [degrees] });
+      return adaptiveRound(
+        result,
+        roundedMatrix,
+        floatPrecision,
+        matrixPrecision,
+      );
     }
   }
 
@@ -478,22 +486,17 @@ function removeADigitFromAllTransforms(
  * @param {TransformItem} t
  */
 function removeADigitFromOneTransform(t) {
-  switch (t.name) {
-    case 'rotate': {
-      const newData = [];
-      let changed = false;
-      for (const n of t.data) {
-        if (Number.isInteger(n)) {
-          newData.push(n);
-        } else {
-          newData.push(toFixed(n, getNumberOfDecimalDigits(n) - 1));
-          changed = true;
-        }
-      }
-      return changed ? { name: t.name, data: newData } : undefined;
+  const newData = [];
+  let changed = false;
+  for (const n of t.data) {
+    if (Number.isInteger(n)) {
+      newData.push(n);
+    } else {
+      newData.push(toFixed(n, getNumberOfDecimalDigits(n) - 1));
+      changed = true;
     }
   }
-  throw new Error(t.name);
+  return changed ? { name: t.name, data: newData } : undefined;
 }
 
 /**
@@ -515,7 +518,8 @@ function addADigitToAllTransforms(rounded, original) {
  */
 function addADigitToOneTransform(rounded, original) {
   switch (rounded.name) {
-    case 'rotate': {
+    case 'rotate':
+    case 'translate': {
       let changed = false;
       for (let index = 0; index < rounded.data.length; index++) {
         const r = rounded.data[index];

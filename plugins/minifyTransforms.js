@@ -3,7 +3,7 @@ import { removeLeadingZero, toFixed } from '../lib/svgo/tools.js';
 
 /**
  * @typedef {{ name: string, data: number[] }} TransformItem
- * @typedef {{floatPrecision?:number,matrixPrecision?:number,roundSmallNumbers?:number|false,round09?:number|false}} MinifyParams
+ * @typedef {{floatPrecision?:number,matrixPrecision?:number,round09?:number|false}} MinifyParams
  */
 
 export const name = 'minifyTransforms';
@@ -20,9 +20,6 @@ export const fn = (root, params) => {
     calculatedParams.matrixPrecision = undefined;
   } else if (calculatedParams.matrixPrecision === undefined) {
     calculatedParams.matrixPrecision = calculatedParams.floatPrecision + 2;
-  }
-  if (calculatedParams.roundSmallNumbers === undefined) {
-    calculatedParams.roundSmallNumbers = 1e-10;
   }
   if (calculatedParams.round09 === undefined) {
     calculatedParams.round09 = 8;
@@ -610,22 +607,12 @@ function roundExtremeValues(transforms, params) {
    * @param {number} n
    */
   function roundValue(n) {
-    if (
-      params.roundSmallNumbers &&
-      n < params.roundSmallNumbers &&
-      n > -params.roundSmallNumbers
-    ) {
-      return 0;
-    }
     if (params.round09) {
       return round09(n, params.round09);
     }
     return n;
   }
 
-  if (!params.roundSmallNumbers) {
-    return transforms;
-  }
   const rounded = [];
   for (const transform of transforms) {
     rounded.push({

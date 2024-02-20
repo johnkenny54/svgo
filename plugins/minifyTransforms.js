@@ -3,7 +3,7 @@ import { removeLeadingZero, toFixed } from '../lib/svgo/tools.js';
 
 /**
  * @typedef {{ name: string, data: number[] }} TransformItem
- * @typedef {{floatPrecision?:number,matrixPrecision?:number}} MinifyParams
+ * @typedef {{floatPrecision?:number,matrixPrecision?:number,roundSmallNumbers?:number|false}} MinifyParams
  */
 
 export const name = 'minifyTransforms';
@@ -15,11 +15,14 @@ export const description = 'Make transform expressions as short as possible';
  * @type {import('./plugins-types.js').Plugin<'minifyTransforms'>}
  */
 export const fn = (root, params) => {
-  const precision = { ...params };
-  if (precision.floatPrecision === undefined) {
-    precision.matrixPrecision = undefined;
-  } else if (precision.matrixPrecision === undefined) {
-    precision.matrixPrecision = precision.floatPrecision + 2;
+  const calculatedParams = { ...params };
+  if (calculatedParams.floatPrecision === undefined) {
+    calculatedParams.matrixPrecision = undefined;
+  } else if (calculatedParams.matrixPrecision === undefined) {
+    calculatedParams.matrixPrecision = calculatedParams.floatPrecision + 2;
+  }
+  if (calculatedParams.roundSmallNumbers === undefined) {
+    calculatedParams.roundSmallNumbers = 1e-10;
   }
 
   return {
@@ -28,19 +31,19 @@ export const fn = (root, params) => {
         if (node.attributes.transform) {
           node.attributes.transform = minifyTransforms(
             node.attributes.transform,
-            precision,
+            calculatedParams,
           );
         }
         if (node.attributes.gradientTransform) {
           node.attributes.gradientTransform = minifyTransforms(
             node.attributes.gradientTransform,
-            precision,
+            calculatedParams,
           );
         }
         if (node.attributes.patternTransform) {
           node.attributes.patternTransform = minifyTransforms(
             node.attributes.patternTransform,
-            precision,
+            calculatedParams,
           );
         }
       },
@@ -54,29 +57,36 @@ export const fn = (root, params) => {
  * @returns {string}
  */
 function minifyTransforms(transforms, params) {
-  const parsed = transform2js(transforms);
-  const candidates = [minifyTransformsLosslessly(parsed)];
+  const parsedOriginal = transform2js(transforms);
 
-  if (
-    params.floatPrecision !== undefined &&
-    params.matrixPrecision !== undefined
-  ) {
+  const floatPrecision = params.floatPrecision;
+  const matrixPrecision = params.matrixPrecision;
+
+  const shouldRound =
+    floatPrecision !== undefined && matrixPrecision !== undefined;
+
+  const roundedOriginal = roundExtremeValues(parsedOriginal, params);
+
+  const losslessOriginal = minifyTransformsLosslessly(roundedOriginal);
+  const candidates = [losslessOriginal];
+
+  if (shouldRound) {
     // Find the target matrix to compare against.
-    const targetMatrixExact = transformsMultiply(parsed);
+    const targetMatrixExact = transformsMultiply(losslessOriginal);
     const targetMatrixRounded = roundTransform(
       targetMatrixExact,
-      params.floatPrecision,
-      params.matrixPrecision,
+      floatPrecision,
+      matrixPrecision,
     );
-    const originalHasMatrix = parsed.some((t) => t.name === 'matrix');
+    const originalHasMatrix = losslessOriginal.some((t) => t.name === 'matrix');
 
-    if (originalHasMatrix || parsed.length > 1) {
+    if (originalHasMatrix || losslessOriginal.length > 1) {
       // Try to decompose the rounded matrix.
       const decomposed = decompose(
         targetMatrixExact,
         targetMatrixRounded,
-        params.floatPrecision,
-        params.matrixPrecision,
+        floatPrecision,
+        matrixPrecision,
       );
       if (decomposed) {
         candidates.push(minifyTransformsLosslessly(decomposed));
@@ -88,10 +98,10 @@ function minifyTransforms(transforms, params) {
     if (!originalHasMatrix) {
       // Original expression already decomposed; round adaptively, then minify.
       const rounded = adaptiveRound(
-        parsed,
+        losslessOriginal,
         targetMatrixRounded,
-        params.floatPrecision,
-        params.matrixPrecision,
+        floatPrecision,
+        matrixPrecision,
       );
       if (rounded) {
         candidates.push(minifyTransformsLosslessly(rounded));
@@ -586,4 +596,36 @@ function matricesAreEqual(m1, m2) {
 function getNumberOfDecimalDigits(n) {
   const str = n.toString();
   return str.slice(str.indexOf('.')).length - 1;
+}
+
+/**
+ * @param {TransformItem[]} transforms
+ * @param {MinifyParams} params
+ */
+function roundExtremeValues(transforms, params) {
+  /**
+   * @param {number} n
+   */
+  function roundValue(n) {
+    if (
+      params.roundSmallNumbers &&
+      n < params.roundSmallNumbers &&
+      n > -params.roundSmallNumbers
+    ) {
+      return 0;
+    }
+    return n;
+  }
+
+  if (!params.roundSmallNumbers) {
+    return transforms;
+  }
+  const rounded = [];
+  for (const transform of transforms) {
+    rounded.push({
+      name: transform.name,
+      data: transform.data.map((n) => roundValue(n)),
+    });
+  }
+  return rounded;
 }

@@ -141,6 +141,7 @@ type DefaultPlugins = {
   minifyTransforms: {
     floatPrecision?: number;
     matrixPrecision?: number;
+    roundSmallNumbers?: number | false;
   };
   moveElemsAttrsToGroup: void;
   moveGroupAttrsToElems: void;

@@ -142,6 +142,7 @@ type DefaultPlugins = {
     floatPrecision?: number;
     matrixPrecision?: number;
     roundSmallNumbers?: number | false;
+    round09?: number | false;
   };
   moveElemsAttrsToGroup: void;
   moveGroupAttrsToElems: void;

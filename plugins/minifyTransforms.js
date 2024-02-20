@@ -3,7 +3,7 @@ import { removeLeadingZero, toFixed } from '../lib/svgo/tools.js';
 
 /**
  * @typedef {{ name: string, data: number[] }} TransformItem
- * @typedef {{floatPrecision?:number,matrixPrecision?:number,roundSmallNumbers?:number|false}} MinifyParams
+ * @typedef {{floatPrecision?:number,matrixPrecision?:number,roundSmallNumbers?:number|false,round09?:number|false}} MinifyParams
  */
 
 export const name = 'minifyTransforms';
@@ -23,6 +23,9 @@ export const fn = (root, params) => {
   }
   if (calculatedParams.roundSmallNumbers === undefined) {
     calculatedParams.roundSmallNumbers = 1e-10;
+  }
+  if (calculatedParams.round09 === undefined) {
+    calculatedParams.round09 = 8;
   }
 
   return {
@@ -614,6 +617,9 @@ function roundExtremeValues(transforms, params) {
     ) {
       return 0;
     }
+    if (params.round09) {
+      return round09(n, params.round09);
+    }
     return n;
   }
 
@@ -628,4 +634,34 @@ function roundExtremeValues(transforms, params) {
     });
   }
   return rounded;
+}
+
+/**
+ * Round numbers with consective 0s or 9s.
+ * @param {number} n
+ * @param {number} minCount number of consecutive 0s or 99s that trigger rounding.
+ * @returns {number}
+ */
+export function round09(n, minCount) {
+  /**
+   * @param {RegExp} re
+   */
+  function checkPattern(re) {
+    const m = str.match(re);
+    if (m) {
+      return toFixed(n, m[1].length);
+    }
+  }
+  const str = n.toString();
+  const re9 = new RegExp(`.*\\.(\\d*)9{${minCount},}`);
+  const p9 = checkPattern(re9);
+  if (p9 !== undefined) {
+    return p9;
+  }
+  const re0 = new RegExp(`.*\\.(\\d*)0{${minCount},}`);
+  const p0 = checkPattern(re0);
+  if (p0 !== undefined) {
+    return p0;
+  }
+  return n;
 }

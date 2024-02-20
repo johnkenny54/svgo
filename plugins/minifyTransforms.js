@@ -61,27 +61,40 @@ function minifyTransforms(transforms, params) {
     params.floatPrecision !== undefined &&
     params.matrixPrecision !== undefined
   ) {
-    // If there is more than one transform, multiply them all together before rounding.
-    const transform =
-      parsed.length > 1 ? transformsMultiply(parsed) : parsed[0];
-
-    const rounded = roundTransform(
-      transform,
+    // Find the target matrix to compare against.
+    const targetMatrixExact = transformsMultiply(parsed);
+    const targetMatrixRounded = roundTransform(
+      targetMatrixExact,
       params.floatPrecision,
       params.matrixPrecision,
     );
-    candidates.push(minifyTransformsLosslessly([rounded]));
+    const originalHasMatrix = parsed.some((t) => t.name === 'matrix');
 
-    // If the rounded transform is a matrix, see if we can decompose it.
-    if (rounded.name === 'matrix') {
+    if (originalHasMatrix || parsed.length > 1) {
+      // Try to decompose the rounded matrix.
       const decomposed = decompose(
-        transform,
-        rounded,
+        targetMatrixExact,
+        targetMatrixRounded,
         params.floatPrecision,
         params.matrixPrecision,
       );
       if (decomposed) {
         candidates.push(minifyTransformsLosslessly(decomposed));
+      }
+      // Add the rounded matrix itself as a candidate.
+      candidates.push([targetMatrixRounded]);
+    }
+
+    if (!originalHasMatrix) {
+      // Original expression already decomposed; round adaptively, then minify.
+      const rounded = adaptiveRound(
+        parsed,
+        targetMatrixRounded,
+        params.floatPrecision,
+        params.matrixPrecision,
+      );
+      if (rounded) {
+        candidates.push(minifyTransformsLosslessly(rounded));
       }
     }
   }
@@ -519,6 +532,9 @@ function addADigitToAllTransforms(rounded, original) {
 function addADigitToOneTransform(rounded, original) {
   switch (rounded.name) {
     case 'rotate':
+    case 'scale':
+    case 'skewX':
+    case 'skewY':
     case 'translate': {
       let changed = false;
       for (let index = 0; index < rounded.data.length; index++) {

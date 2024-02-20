@@ -6,9 +6,9 @@ Basic rounding. Rounding for first 4 elements of matrix and for scale should def
     <rect x="0" y="10" width="5" height="8" fill="red" transform="matrix(0,1.1234,-1.234567,0,0,0)"/>
     <rect x="0" y="10" width="5" height="8" fill="blue" transform="translate(12.3456)"/>
     <rect x="0" y="10" width="5" height="8" fill="green" transform="rotate(23.4567)"/>
-    <rect x="0" y="10" width="5" height="8" fill="yellow" transform="scale(1.234567)"/>
-    <rect x="0" y="20" width="5" height="8" fill="orange" transform="skewX(34.5678)"/>
-    <rect x="0" y="30" width="5" height="8" fill="purple" transform="skewY(45.6789)"/>
+    <rect x="0" y="10" width="5" height="8" fill="yellow" transform="scale(1.2345678)"/>
+    <rect x="0" y="20" width="5" height="8" fill="orange" transform="skewX(34.567822)"/>
+    <rect x="0" y="30" width="5" height="8" fill="purple" transform="skewY(45.678911)"/>
 </svg>
 
 @@@
@@ -19,7 +19,7 @@ Basic rounding. Rounding for first 4 elements of matrix and for scale should def
     <rect x="0" y="10" width="5" height="8" fill="green" transform="rotate(23.457)"/>
     <rect x="0" y="10" width="5" height="8" fill="yellow" transform="scale(1.23457)"/>
     <rect x="0" y="20" width="5" height="8" fill="orange" transform="skewX(34.568)"/>
-    <rect x="0" y="30" width="5" height="8" fill="purple" transform="skewY(45.679)"/>
+    <rect x="0" y="30" width="5" height="8" fill="purple" transform="skewY(45.6789)"/>
 </svg>
 
 @@@

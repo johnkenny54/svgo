@@ -30,6 +30,18 @@ const TEST_CASES = [
     'matrix(0.96269,0.2706,-0.2706,0.96269,32.123,0)',
     'translate(32.123)rotate(15.7)',
   ],
+  [
+    'scale(1.234567)rotate(1.3)',
+    'matrix(1.23425,0.02801,-0.02801,1.23425,0,0)',
+    'scale(1.23457)rotate(1.3)',
+  ],
+  [
+    'scale(1.234567)rotate(1.3)',
+    'matrix(1.234,0.028,-0.028,1.234,0,0)',
+    'scale(1.2346)rotate(1.3)',
+    3,
+    3,
+  ],
 ];
 
 for (const testCase of TEST_CASES) {

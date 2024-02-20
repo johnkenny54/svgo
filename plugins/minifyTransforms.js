@@ -22,7 +22,7 @@ export const fn = (root, params) => {
     calculatedParams.matrixPrecision = calculatedParams.floatPrecision + 2;
   }
   if (calculatedParams.round09 === undefined) {
-    calculatedParams.round09 = 8;
+    calculatedParams.round09 = 6;
   }
 
   return {

@@ -156,15 +156,38 @@ function mergeTransforms(transforms) {
     if (next) {
       switch (transform.name) {
         case 'translate':
-          // If next one is a translate, merge them.
-          if (next.name === 'translate') {
-            const x = transform.data[0] + next.data[0];
-            const y =
-              (transform.data.length > 1 ? transform.data[1] : 0) +
-              (next.data.length > 1 ? next.data[1] : 0);
-            merged.push({ name: 'translate', data: [x, y] });
-            index++;
-            continue;
+          switch (next.name) {
+            case 'scale':
+              {
+                // translate()scale() will usually be shorter as a matrix, but if sx === sy, it may be shorter the way it is.
+                const x = transform.data[0];
+                const y = transform.data.length > 1 ? transform.data[1] : 0;
+                const sx = next.data[0];
+                const sy = next.data.length > 1 ? next.data[1] : sx;
+                const matrix = { name: 'matrix', data: [sx, 0, 0, sy, x, y] };
+                let useMatrix = true;
+                if (sx === sy) {
+                  const matStr = jsToString([matrix]);
+                  const tsStr = jsToString([transform, next]);
+                  useMatrix = matStr.length <= tsStr.length;
+                }
+                if (useMatrix) {
+                  merged.push(matrix);
+                  index++;
+                  continue;
+                }
+              }
+              break;
+            case 'translate': {
+              // If next one is a translate, merge them.
+              const x = transform.data[0] + next.data[0];
+              const y =
+                (transform.data.length > 1 ? transform.data[1] : 0) +
+                (next.data.length > 1 ? next.data[1] : 0);
+              merged.push({ name: 'translate', data: [x, y] });
+              index++;
+              continue;
+            }
           }
           break;
       }

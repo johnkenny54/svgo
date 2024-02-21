@@ -164,6 +164,22 @@ function mergeTransforms(transforms) {
     const next = transforms[index + 1];
     if (next) {
       switch (transform.name) {
+        case 'scale':
+          if (next.name === 'scale') {
+            // Merge adjacent scales if they can be multiplied exactly.
+            const sx1 = transform.data[0];
+            const sy1 = transform.data.length > 1 ? transform.data[1] : sx1;
+            const sx2 = next.data[0];
+            const sy2 = next.data.length > 1 ? next.data[1] : sx2;
+            const sx = exactMul(sx1, sx2);
+            const sy = exactMul(sy1, sy2);
+            if (sx !== undefined && sy !== undefined) {
+              merged.push({ name: 'scale', data: [sx, sy] });
+              index++;
+              continue;
+            }
+          }
+          break;
         case 'translate':
           switch (next.name) {
             case 'scale':
@@ -690,4 +706,17 @@ export function round09(n, minCount) {
     return p0;
   }
   return n;
+}
+
+/**
+ * @param {number} n
+ * @param {number} m
+ */
+function exactMul(n, m) {
+  const d1 = getNumberOfDecimalDigits(n);
+  const d2 = getNumberOfDecimalDigits(m);
+  if (d1 + d2 > 12) {
+    return undefined;
+  }
+  return toFixed(n * m, d1 + d2);
 }

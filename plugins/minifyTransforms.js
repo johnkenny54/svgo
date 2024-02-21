@@ -109,14 +109,23 @@ function minifyTransforms(transforms, params) {
     }
   }
 
+  return getShortest(candidates).str;
+}
+
+/**
+ * @param {TransformItem[][]} candidates
+ */
+function getShortest(candidates) {
   let shortest = jsToString(candidates[0]);
+  let shortestIndex = 0;
   for (let index = 0; index < candidates.length; index++) {
     const str = jsToString(candidates[index]);
     if (str.length < shortest.length) {
       shortest = str;
+      shortestIndex = index;
     }
   }
-  return shortest;
+  return { transforms: candidates[shortestIndex], str: shortest };
 }
 
 /**
@@ -129,7 +138,7 @@ function minifyTransformsLosslessly(transforms) {
   for (const transform of transforms) {
     const t = minifyTransform(transform);
     if (t) {
-      minified.push(t);
+      minified.push(...t);
     }
   }
 
@@ -167,9 +176,8 @@ function mergeTransforms(transforms) {
                 const matrix = { name: 'matrix', data: [sx, 0, 0, sy, x, y] };
                 let useMatrix = true;
                 if (sx === sy) {
-                  const matStr = jsToString([matrix]);
-                  const tsStr = jsToString([transform, next]);
-                  useMatrix = matStr.length <= tsStr.length;
+                  const shortest = getShortest([[matrix], [transform, next]]);
+                  useMatrix = shortest.transforms.length === 1;
                 }
                 if (useMatrix) {
                   merged.push(matrix);
@@ -255,6 +263,7 @@ function decompose(
 
 /**
  * @param {TransformItem} t
+ * @returns {TransformItem[]}
  */
 function minifyTransform(t) {
   switch (t.name) {
@@ -265,45 +274,52 @@ function minifyTransform(t) {
     case 'scale':
       if (t.data[0] === 1 && (t.data.length === 1 || t.data[1] === 1)) {
         // This is an identity transform; remove it.
-        return;
+        return [];
       }
       break;
     case 'skewX':
     case 'skewY':
       if (t.data[0] === 0) {
         // This is an identity transform; remove it.
-        return;
+        return [];
       }
       break;
     case 'translate':
       if (t.data[0] === 0 && (t.data.length === 1 || t.data[1] === 0)) {
         // This is an identity transform; remove it.
-        return;
+        return [];
       }
       break;
   }
-  return t;
+  return [t];
 }
 
 /**
  * @param {number[]} data
+ * @return {TransformItem[]}
  */
 function minifyMatrix(data) {
   if (data[0] === 1 && data[1] === 0 && data[2] === 0 && data[3] === 1) {
     return minifyTranslate([data[4], data[5]]);
   }
-  if (data[1] === 0 && data[2] === 0 && data[4] === 0 && data[5] === 0) {
-    return { name: 'scale', data: [data[0], data[3]] };
+  if (data[1] === 0 && data[2] === 0) {
+    const scale = { name: 'scale', data: [data[0], data[3]] };
+    if (data[4] === 0 && data[5] === 0) {
+      return [scale];
+    }
+    const translate = { name: 'translate', data: [data[4], data[5]] };
+    return getShortest([[{ name: 'matrix', data: data }], [translate, scale]])
+      .transforms;
   }
   if (data[0] === 0 && data[3] === 0 && data[4] === 0 && data[5] === 0) {
     if (
       (data[1] === 1 && data[2] === -1) ||
       (data[1] === -1 && data[2] === 1)
     ) {
-      return { name: 'rotate', data: [data[1] === 1 ? 90 : -90] };
+      return [{ name: 'rotate', data: [data[1] === 1 ? 90 : -90] }];
     }
   }
-  return { name: 'matrix', data: data };
+  return [{ name: 'matrix', data: data }];
 }
 
 /**
@@ -315,13 +331,13 @@ function minifyRotate(data) {
   if (cx === 0 && cy === 0) {
     switch (data[0]) {
       case 180:
-        return { name: 'scale', data: [-1] };
+        return [{ name: 'scale', data: [-1] }];
       case 0:
       case 360:
-        return;
+        return [];
     }
   }
-  return { name: 'rotate', data: data };
+  return [{ name: 'rotate', data: data }];
 }
 
 /**
@@ -329,9 +345,9 @@ function minifyRotate(data) {
  */
 function minifyTranslate(data) {
   if (data[0] === 0 && data[1] === 0) {
-    return;
+    return [];
   }
-  return { name: 'translate', data: data };
+  return [{ name: 'translate', data: data }];
 }
 
 /**

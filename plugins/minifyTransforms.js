@@ -185,10 +185,11 @@ function mergeLikeTransforms(transforms) {
         return { name: 'scale', data: [sx, sy] };
       }
       case 'translate': {
-        const x = t1.data[0] + t2.data[0];
-        const y =
-          (t1.data.length > 1 ? t1.data[1] : 0) +
-          (t2.data.length > 1 ? t2.data[1] : 0);
+        const x = exactAdd(t1.data[0], t2.data[0]);
+        const y = exactAdd(
+          t1.data.length > 1 ? t1.data[1] : 0,
+          t2.data.length > 1 ? t2.data[1] : 0,
+        );
         return { name: 'translate', data: [x, y] };
       }
       default:
@@ -747,6 +748,16 @@ export function round09(n, minCount) {
     return p0;
   }
   return n;
+}
+
+/**
+ * @param {number} n
+ * @param {number} m
+ */
+function exactAdd(n, m) {
+  const d1 = getNumberOfDecimalDigits(n);
+  const d2 = getNumberOfDecimalDigits(m);
+  return toFixed(n + m, Math.max(d1 + d2));
 }
 
 /**

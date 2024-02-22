@@ -199,6 +199,7 @@ function mergeLikeTransforms(transforms) {
 
   const mergedTransforms = [];
   let last;
+  let hasMerges = false;
   for (let index = 0; index < transforms.length; index++) {
     const transform = transforms[index];
     if (last && last.name === transform.name) {
@@ -208,6 +209,7 @@ function mergeLikeTransforms(transforms) {
         // Successful, replace the last one in the array.
         mergedTransforms[mergedTransforms.length - 1] = mergedTransform;
         last = mergedTransform;
+        hasMerges = true;
       } else {
         // Unable to merge. Just copy as is.
         mergedTransforms.push(transform);
@@ -220,7 +222,16 @@ function mergeLikeTransforms(transforms) {
     }
   }
 
-  return mergedTransforms;
+  if (!hasMerges) {
+    return mergedTransforms;
+  }
+
+  // Run through the list again and minify each transform in case there are any identities.
+  const minified = [];
+  for (const transform of mergedTransforms) {
+    minified.push(...minifyTransform(transform));
+  }
+  return minified;
 }
 
 /**

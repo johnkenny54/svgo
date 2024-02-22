@@ -158,28 +158,80 @@ function minifyTransformsLosslessly(transforms) {
  * @param {TransformItem[]} transforms
  */
 function mergeTransforms(transforms) {
+  return mergeUnlikeTransforms(mergeLikeTransforms(transforms));
+}
+
+/**
+ * @param {TransformItem[]} transforms
+ */
+function mergeLikeTransforms(transforms) {
+  /**
+   * @param {TransformItem} t1
+   * @param {TransformItem} t2
+   */
+  function merge(t1, t2) {
+    switch (t1.name) {
+      case 'scale': {
+        // Merge adjacent scales if they can be multiplied exactly.
+        const sx1 = t1.data[0];
+        const sy1 = t1.data.length > 1 ? t1.data[1] : sx1;
+        const sx2 = t2.data[0];
+        const sy2 = t2.data.length > 1 ? t2.data[1] : sx2;
+        const sx = exactMul(sx1, sx2);
+        const sy = exactMul(sy1, sy2);
+        if (sx === undefined || sy === undefined) {
+          return;
+        }
+        return { name: 'scale', data: [sx, sy] };
+      }
+      case 'translate': {
+        const x = t1.data[0] + t2.data[0];
+        const y =
+          (t1.data.length > 1 ? t1.data[1] : 0) +
+          (t2.data.length > 1 ? t2.data[1] : 0);
+        return { name: 'translate', data: [x, y] };
+      }
+      default:
+        return;
+    }
+  }
+
+  const mergedTransforms = [];
+  let last;
+  for (let index = 0; index < transforms.length; index++) {
+    const transform = transforms[index];
+    if (last && last.name === transform.name) {
+      // Try to merge them.
+      const mergedTransform = merge(last, transform);
+      if (mergedTransform) {
+        // Successful, replace the last one in the array.
+        mergedTransforms[mergedTransforms.length - 1] = mergedTransform;
+        last = mergedTransform;
+      } else {
+        // Unable to merge. Just copy as is.
+        mergedTransforms.push(transform);
+        last = transform;
+      }
+    } else {
+      // Different type than the last one, just copy it as is.
+      mergedTransforms.push(transform);
+      last = transform;
+    }
+  }
+
+  return mergedTransforms;
+}
+
+/**
+ * @param {TransformItem[]} transforms
+ */
+function mergeUnlikeTransforms(transforms) {
   const merged = [];
   for (let index = 0; index < transforms.length; index++) {
     const transform = transforms[index];
-    const next = transforms[index + 1];
+    let next = transforms[index + 1];
     if (next) {
       switch (transform.name) {
-        case 'scale':
-          if (next.name === 'scale') {
-            // Merge adjacent scales if they can be multiplied exactly.
-            const sx1 = transform.data[0];
-            const sy1 = transform.data.length > 1 ? transform.data[1] : sx1;
-            const sx2 = next.data[0];
-            const sy2 = next.data.length > 1 ? next.data[1] : sx2;
-            const sx = exactMul(sx1, sx2);
-            const sy = exactMul(sy1, sy2);
-            if (sx !== undefined && sy !== undefined) {
-              merged.push({ name: 'scale', data: [sx, sy] });
-              index++;
-              continue;
-            }
-          }
-          break;
         case 'translate':
           switch (next.name) {
             case 'scale':
@@ -202,18 +254,7 @@ function mergeTransforms(transforms) {
                 }
               }
               break;
-            case 'translate': {
-              // If next one is a translate, merge them.
-              const x = transform.data[0] + next.data[0];
-              const y =
-                (transform.data.length > 1 ? transform.data[1] : 0) +
-                (next.data.length > 1 ? next.data[1] : 0);
-              merged.push({ name: 'translate', data: [x, y] });
-              index++;
-              continue;
-            }
           }
-          break;
       }
     }
     merged.push(transform);

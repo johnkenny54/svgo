@@ -160,6 +160,18 @@ function normalize(transforms) {
           }
         }
         break;
+      case 'rotate':
+        if (
+          t2.name === 'rotate' &&
+          t1.data[1] === t2.data[1] &&
+          t1.data[2] === t2.data[2]
+        ) {
+          // Add the angles if cx and cy are the same.
+          return normalizeTransform({
+            name: 'rotate',
+            data: [t1.data[0] + t2.data[0], t1.data[1], t1.data[2]],
+          });
+        }
     }
     return;
   }
@@ -329,26 +341,40 @@ function normalize(transforms) {
     }
   }
 
-  const results = [];
-  let currentTransform;
-  for (const transform of transforms) {
-    const normalized = normalizeTransform(transform);
-    if (currentTransform) {
-      const merged = mergeTransforms(currentTransform, normalized);
-      if (merged) {
-        currentTransform = merged;
+  let tryToMergeAgain = true;
+  let mergedTransforms = [];
+  while (tryToMergeAgain) {
+    tryToMergeAgain = false;
+    let currentTransform;
+    for (const transform of transforms) {
+      const normalized = normalizeTransform(transform);
+      if (currentTransform) {
+        const merged = mergeTransforms(currentTransform, normalized);
+        if (merged) {
+          currentTransform = merged;
+          tryToMergeAgain = true;
+        } else {
+          mergedTransforms.push(currentTransform);
+          currentTransform = normalized;
+        }
       } else {
-        results.push(...shortenTransform(currentTransform));
         currentTransform = normalized;
       }
-    } else {
-      currentTransform = normalized;
+    }
+    if (currentTransform) {
+      mergedTransforms.push(currentTransform);
+    }
+    if (tryToMergeAgain) {
+      transforms = mergedTransforms;
+      mergedTransforms = [];
     }
   }
-  if (currentTransform) {
-    results.push(...shortenTransform(currentTransform));
+
+  const shortened = [];
+  for (const transform of mergedTransforms) {
+    shortened.push(...shortenTransform(transform));
   }
-  return results;
+  return shortened;
 }
 
 /**

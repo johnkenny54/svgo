@@ -238,12 +238,48 @@ function mergeLikeTransforms(transforms) {
  * @param {TransformItem[]} transforms
  */
 function mergeUnlikeTransforms(transforms) {
-  const merged = [];
+  let merged = [];
   for (let index = 0; index < transforms.length; index++) {
-    const transform = transforms[index];
+    let transform = transforms[index];
+    /** @type {TransformItem|undefined} */
     let next = transforms[index + 1];
-    if (next) {
+    while (next) {
       switch (transform.name) {
+        case 'matrix':
+          {
+            const data = transform.data;
+            if (data[1] === 0 && data[2] === 0) {
+              // This is a scale() or scale()translate() matrix. Try to merge it with the adjacent transform.
+              switch (next.name) {
+                case 'translate':
+                  {
+                    const sxtx = exactMul(data[0], next.data[0]);
+                    const syty =
+                      next.data.length > 1
+                        ? exactMul(data[3], next.data[1])
+                        : 0;
+                    if (sxtx !== undefined && syty !== undefined) {
+                      const matrix = {
+                        name: 'matrix',
+                        data: [
+                          data[0],
+                          data[1],
+                          data[2],
+                          data[3],
+                          exactAdd(sxtx, data[4]),
+                          exactAdd(syty, data[5]),
+                        ],
+                      };
+                      transform = matrix;
+                      index++;
+                      next = transforms[index + 1];
+                    }
+                  }
+                  break;
+              }
+            }
+          }
+          break;
         case 'translate':
           switch (next.name) {
             case 'scale':
@@ -260,14 +296,16 @@ function mergeUnlikeTransforms(transforms) {
                   useMatrix = shortest.transforms.length === 1;
                 }
                 if (useMatrix) {
-                  merged.push(matrix);
+                  transform = matrix;
                   index++;
+                  next = transforms[index + 1];
                   continue;
                 }
               }
               break;
           }
       }
+      next = undefined;
     }
     merged.push(transform);
   }

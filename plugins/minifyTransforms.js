@@ -399,6 +399,9 @@ function decompose(
       // Then average acos and asin.
       let asin = Math.asin(data[1]);
       let acos = Math.acos(data[0]);
+      if (Number.isNaN(asin) || Number.isNaN(acos)) {
+        return;
+      }
       if (data[1] < 0) {
         // sin is negative, so angle is between -pi and 0.
         acos = -acos;

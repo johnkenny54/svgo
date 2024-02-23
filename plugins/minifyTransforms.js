@@ -687,7 +687,7 @@ function addADigitToOneTransform(rounded, original) {
  * @param {number} rounded
  * @param {number} original
  */
-function addADigitToNumber(rounded, original) {
+export function addADigitToNumber(rounded, original) {
   let r = rounded;
   for (
     let n = getNumberOfDecimalDigits(rounded) + 1;
@@ -715,8 +715,21 @@ function matricesAreEqual(m1, m2) {
 /**
  * @param {number} n
  */
-function getNumberOfDecimalDigits(n) {
+export function getNumberOfDecimalDigits(n) {
   const str = n.toString();
+  if (str.includes('e')) {
+    // Include the number of digits both before and after the decimal point, and account for the exponent.
+    const parts = str.split('e');
+    const numberStr = parts[0];
+    const expStr = parts[1];
+    return Math.max(
+      numberStr.length -
+        (numberStr.includes('.') ? 1 : 0) -
+        parseInt(expStr) -
+        1,
+      0,
+    );
+  }
   return str.slice(str.indexOf('.')).length - 1;
 }
 

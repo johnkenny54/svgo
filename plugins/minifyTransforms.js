@@ -133,26 +133,249 @@ function getShortest(candidates) {
  * @returns {TransformItem[]}
  */
 function minifyTransformsLosslessly(transforms) {
-  // First minify them individually.
-  let minified = [];
-  for (const transform of transforms) {
-    const t = minifyTransform(transform);
-    if (t) {
-      minified.push(...t);
-    }
-  }
+  // Normalize to a matrix where we can.
+  const normalized = normalize(transforms);
 
-  // If there is more than one, try to merge them.
-  while (minified.length > 1) {
-    const merged = mergeTransforms(minified);
-    if (merged.length === minified.length) {
-      break;
-    }
-    minified = merged;
-  }
-
-  return minified;
+  return normalized;
 }
+
+/**
+ * @param {TransformItem[]} transforms
+ * @returns {TransformItem[]}
+ */
+function normalize(transforms) {
+  /**
+   *
+   * @param {TransformItem} t1
+   * @param {TransformItem} t2
+   * @returns {TransformItem|undefined}
+   */
+  function mergeTransforms(t1, t2) {
+    switch (t1.name) {
+      case 'matrix':
+        if (t2.name == 'matrix') {
+          const m = mulMatrices(t1.data, t2.data);
+          if (m) {
+            return m;
+          }
+        }
+        break;
+    }
+    return;
+  }
+
+  /**
+   * @param {number[]} m1
+   * @param {number[]} m2
+   * @returns {TransformItem|undefined}
+   */
+  function mulMatrices(m1, m2) {
+    /**
+     *
+     * @param {number} a
+     * @param {number} b
+     * @param {number} c
+     * @param {number} d
+     */
+    function mulAdd(a, b, c, d) {
+      const ab = exactMul(a, b);
+      const cd = exactMul(c, d);
+      if (ab !== undefined && cd !== undefined) {
+        return exactAdd(ab, cd);
+      }
+    }
+    const [a1, b1, c1, d1, e1, f1] = m1;
+    const [a2, b2, c2, d2, e2, f2] = m2;
+    const a = mulAdd(a1, a2, c1, b2);
+    const b = mulAdd(b1, a2, d1, b2);
+    const c = mulAdd(a1, c2, c1, d2);
+    const d = mulAdd(b1, c2, d1, d2);
+    const e = mulAdd(a1, e2, c1, f2);
+    const f = mulAdd(b1, e2, d1, f2);
+    if (
+      a !== undefined &&
+      b !== undefined &&
+      c !== undefined &&
+      d !== undefined &&
+      e !== undefined &&
+      f !== undefined
+    ) {
+      return {
+        name: 'matrix',
+        data: [a, b, c, d, exactAdd(e, e1), exactAdd(f, f1)],
+      };
+    }
+  }
+
+  /**
+   * @param {TransformItem} t
+   * @returns {TransformItem[]}
+   */
+  function shortenTransform(t) {
+    switch (t.name) {
+      case 'matrix':
+        if (t.data[1] === 0 && t.data[2] === 0) {
+          // translate()scale()
+          const result = [];
+          if (t.data[4] !== 0 || t.data[5] !== 0) {
+            result.push({ name: 'translate', data: [t.data[4], t.data[5]] });
+          }
+          if (t.data[0] !== 1 || t.data[3] !== 1) {
+            result.push({ name: 'scale', data: [t.data[0], t.data[3]] });
+          }
+          if (result.length < 2) {
+            return result;
+          }
+          return getShortest([[t], result]).transforms;
+        }
+        // Look for rotate(+/-90).
+        if (
+          t.data[0] === 0 &&
+          t.data[3] === 0 &&
+          t.data[4] === 0 &&
+          t.data[5] === 0
+        ) {
+          let angle;
+          switch (t.data[1]) {
+            case 1:
+              if (t.data[2] === -1) {
+                angle = 90;
+              }
+              break;
+            case -1:
+              if (t.data[2] === 1) {
+                angle = -90;
+              }
+              break;
+          }
+          if (angle) {
+            return [{ name: 'rotate', data: [angle, 0, 0] }];
+          }
+        }
+        break;
+    }
+    return [t];
+  }
+
+  /**
+   * @param {TransformItem} t
+   */
+  function normalizeTransform(t) {
+    switch (t.name) {
+      case 'rotate':
+        {
+          if (t.data.length === 1 || (t.data[1] === 0 && t.data[2] === 0)) {
+            // Convert to matrix if it's a multiple of 90 degrees.
+            let cos, sin;
+            switch (t.data[0] % 360) {
+              case 0:
+                cos = 1;
+                sin = 0;
+                break;
+              case 90:
+                cos = 0;
+                sin = 1;
+                break;
+              case 180:
+                cos = -1;
+                sin = 0;
+                break;
+              case 270:
+                cos = 0;
+                sin = -1;
+                break;
+              default:
+                return {
+                  name: 'rotate',
+                  data: t.data.length === 1 ? [t.data[0], 0, 0] : [...t.data],
+                };
+            }
+            return { name: 'matrix', data: [cos, sin, -sin, cos, 0, 0] };
+          }
+        }
+        return {
+          name: 'rotate',
+          data: t.data.length === 1 ? [t.data[0], 0, 0] : [...t.data],
+        };
+      case 'scale':
+        return {
+          name: 'matrix',
+          data: [
+            t.data[0],
+            0,
+            0,
+            t.data.length > 1 ? t.data[1] : t.data[0],
+            0,
+            0,
+          ],
+        };
+      case 'skewX':
+      case 'skewY':
+        switch (t.data[0] % 360) {
+          case 0:
+            return {
+              name: 'matrix',
+              data: [1, 0, 0, 1, 0, 0],
+            };
+        }
+        return t;
+      case 'translate':
+        return {
+          name: 'matrix',
+          data: [1, 0, 0, 1, t.data[0], t.data.length > 1 ? t.data[1] : 0],
+        };
+      default:
+        return t;
+    }
+  }
+
+  const results = [];
+  let currentTransform;
+  for (const transform of transforms) {
+    const normalized = normalizeTransform(transform);
+    if (currentTransform) {
+      const merged = mergeTransforms(currentTransform, normalized);
+      if (merged) {
+        currentTransform = merged;
+      } else {
+        results.push(...shortenTransform(currentTransform));
+        currentTransform = normalized;
+      }
+    } else {
+      currentTransform = normalized;
+    }
+  }
+  if (currentTransform) {
+    results.push(...shortenTransform(currentTransform));
+  }
+  return results;
+}
+
+/**
+ * @param {TransformItem[]} transforms
+ * @returns {TransformItem[]}
+ */
+// function minifyTransformsLosslesslyOrig(transforms) {
+//   // First minify them individually.
+//   let minified = [];
+//   for (const transform of transforms) {
+//     const t = minifyTransform(transform);
+//     if (t) {
+//       minified.push(...t);
+//     }
+//   }
+
+//   // If there is more than one, try to merge them.
+//   while (minified.length > 1) {
+//     const merged = mergeTransforms(minified);
+//     if (merged.length === minified.length) {
+//       break;
+//     }
+//     minified = merged;
+//   }
+
+//   return minified;
+// }
 
 /**
  * @param {TransformItem[]} transforms

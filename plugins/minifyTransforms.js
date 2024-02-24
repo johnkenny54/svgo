@@ -390,52 +390,63 @@ function decompose(
   floatPrecision,
   matrixPrecision,
 ) {
-  const [a, b, c, d, e, f] = originalMatrix.data;
+  let [a, b, c, d, e, f] = originalMatrix.data;
 
-  const sx = Math.hypot(a, b);
-  //   const sy = Math.hypot(c, d);
-  //   console.log(a / sx);
-  //   console.log(d / sy);
+  let sx = Math.hypot(a, b);
+  const sy = Math.hypot(c, d);
+  let cos = a / sx;
+  let sin = b / sx;
+  const cos2 = d / sy;
 
-  if (a === d && b === -c) {
+  if (toFixed(cos + cos2, floatPrecision) === 0) {
+    // Scales have opposite signs so the calculated cosines are opposites. Invert sx and invert the sine and cosine.
+    sx = -sx;
+    cos = -cos;
+    sin = -sin;
+    a = -a;
+    b = -b;
+  }
+
+  // If we get the same angle with both the sx and sy calculations, it's in the form rotate()scale().
+  if (toFixed(cos - cos2, floatPrecision) === 0) {
     // It might be a rotation matrix - check and see.
-    if (toFixed(sx, matrixPrecision) === 1) {
-      // Find the angle. asin() is in the range -pi/2 to pi/2, acos from 0 to pi, so adjust accordingly depending on signs.
-      // Then average acos and asin.
-      let acos = Math.acos(a);
-      let asin = Math.asin(b);
-      if (Number.isNaN(asin) || Number.isNaN(acos)) {
-        return;
-      }
-      if (b < 0) {
-        // sin is negative, so angle is between -pi and 0.
-        acos = -acos;
-        if (a < 0) {
-          // Both sin and cos are negative, so angle is between -pi and -pi/2.
-          asin = -Math.PI - asin;
-        }
-      } else {
-        // sin is positive, so angle is between 0 and pi.
-        if (a < 0) {
-          // angle is between pi/2 and pi.
-          asin = Math.PI - asin;
-        }
-      }
 
-      const result = [];
-      if (e !== 0 || f !== 0) {
-        result.push({ name: 'translate', data: [e, f] });
-      }
-
-      const degrees = ((acos + asin) * 90) / Math.PI;
-      result.push({ name: 'rotate', data: [degrees] });
-      return adaptiveRound(
-        result,
-        roundedMatrix,
-        floatPrecision,
-        matrixPrecision,
-      );
+    // Find the angle. asin() is in the range -pi/2 to pi/2, acos from 0 to pi, so adjust accordingly depending on signs.
+    // Then average acos and asin.
+    let acos = Math.acos(cos);
+    let asin = Math.asin(sin);
+    if (Number.isNaN(asin) || Number.isNaN(acos)) {
+      return;
     }
+    if (b < 0) {
+      // sin is negative, so angle is between -pi and 0.
+      acos = -acos;
+      if (a < 0) {
+        // Both sin and cos are negative, so angle is between -pi and -pi/2.
+        asin = -Math.PI - asin;
+      }
+    } else {
+      // sin is positive, so angle is between 0 and pi.
+      if (a < 0) {
+        // angle is between pi/2 and pi.
+        asin = Math.PI - asin;
+      }
+    }
+
+    const result = [];
+    if (e !== 0 || f !== 0) {
+      result.push({ name: 'translate', data: [e, f] });
+    }
+
+    const degrees = ((acos + asin) * 90) / Math.PI;
+    result.push({ name: 'rotate', data: [degrees, 0, 0] });
+    result.push({ name: 'scale', data: [sx, sy] });
+    return adaptiveRound(
+      result,
+      roundedMatrix,
+      floatPrecision,
+      matrixPrecision,
+    );
   }
 
   return;

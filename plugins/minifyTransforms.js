@@ -390,36 +390,41 @@ function decompose(
   floatPrecision,
   matrixPrecision,
 ) {
-  const data = originalMatrix.data;
+  const [a, b, c, d, e, f] = originalMatrix.data;
 
-  if (data[0] === data[3] && data[1] === -data[2]) {
+  const sx = Math.hypot(a, b);
+  //   const sy = Math.hypot(c, d);
+  //   console.log(a / sx);
+  //   console.log(d / sy);
+
+  if (a === d && b === -c) {
     // It might be a rotation matrix - check and see.
-    if (toFixed(Math.hypot(data[0], data[1]), matrixPrecision) === 1) {
+    if (toFixed(sx, matrixPrecision) === 1) {
       // Find the angle. asin() is in the range -pi/2 to pi/2, acos from 0 to pi, so adjust accordingly depending on signs.
       // Then average acos and asin.
-      let asin = Math.asin(data[1]);
-      let acos = Math.acos(data[0]);
+      let acos = Math.acos(a);
+      let asin = Math.asin(b);
       if (Number.isNaN(asin) || Number.isNaN(acos)) {
         return;
       }
-      if (data[1] < 0) {
+      if (b < 0) {
         // sin is negative, so angle is between -pi and 0.
         acos = -acos;
-        if (data[0] < 0) {
+        if (a < 0) {
           // Both sin and cos are negative, so angle is between -pi and -pi/2.
           asin = -Math.PI - asin;
         }
       } else {
         // sin is positive, so angle is between 0 and pi.
-        if (data[0] < 0) {
+        if (a < 0) {
           // angle is between pi/2 and pi.
           asin = Math.PI - asin;
         }
       }
 
       const result = [];
-      if (data[4] !== 0 || data[5] !== 0) {
-        result.push({ name: 'translate', data: [data[4], data[5]] });
+      if (e !== 0 || f !== 0) {
+        result.push({ name: 'translate', data: [e, f] });
       }
 
       const degrees = ((acos + asin) * 90) / Math.PI;
@@ -539,6 +544,7 @@ export function adaptiveRound(
   for (const transform of transforms) {
     rounded.push(roundTransform(transform, floatPrecision, matrixPrecision));
   }
+  let count = 0;
   while (
     !roundedMatchesTarget(
       rounded,
@@ -549,6 +555,10 @@ export function adaptiveRound(
   ) {
     if (!addADigitToAllTransforms(rounded, transforms)) {
       // Can't increase the number of digits, and we still haven't hit the target matrix.
+      return;
+    }
+    count++;
+    if (count > 10) {
       return;
     }
   }
@@ -675,7 +685,7 @@ function addADigitToOneTransform(rounded, original) {
       for (let index = 0; index < rounded.data.length; index++) {
         const r = rounded.data[index];
         const o = original.data[index];
-        if (r !== o) {
+        if (r !== rounded.data[index]) {
           rounded.data[index] = addADigitToNumber(r, o);
           changed = true;
         }
@@ -694,7 +704,7 @@ export function addADigitToNumber(rounded, original) {
   let r = rounded;
   for (
     let n = getNumberOfDecimalDigits(rounded) + 1;
-    r === rounded && r !== original;
+    r === rounded && r !== original && n <= 12;
     n++
   ) {
     r = toFixed(original, n);

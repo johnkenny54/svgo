@@ -789,6 +789,16 @@ function roundExtremeValues(transforms, params) {
  * @returns {number}
  */
 export function round09(n, minCount) {
+  /** @param {string} str */
+  function roundExponential(str) {
+    const parts = str.split('e');
+    const exp = parseInt(parts[1]);
+    if (exp >= 0) {
+      return n;
+    }
+    return -exp > minCount ? 0 : n;
+  }
+
   /**
    * @param {RegExp} re
    */
@@ -799,6 +809,9 @@ export function round09(n, minCount) {
     }
   }
   const str = n.toString();
+  if (str.includes('e')) {
+    return roundExponential(str);
+  }
   const re9 = new RegExp(`.*\\.(\\d*)9{${minCount},}`);
   const p9 = checkPattern(re9);
   if (p9 !== undefined) {

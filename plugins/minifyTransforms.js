@@ -696,7 +696,7 @@ function addADigitToOneTransform(rounded, original) {
       for (let index = 0; index < rounded.data.length; index++) {
         const r = rounded.data[index];
         const o = original.data[index];
-        if (r !== rounded.data[index]) {
+        if (o !== rounded.data[index]) {
           rounded.data[index] = addADigitToNumber(r, o);
           changed = true;
         }

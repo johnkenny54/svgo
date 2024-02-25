@@ -19,27 +19,34 @@ export const decompose = (
   floatPrecision,
   matrixPrecision,
 ) => {
-  let [a, b, c, d, e, f] = originalMatrix.data;
+  const e = originalMatrix.data[4];
+  const f = originalMatrix.data[5];
 
   const translate =
     e !== 0 || f !== 0 ? { name: 'translate', data: [e, f] } : undefined;
 
-  const decompositions = [];
-
-  decompositions.push(
-    ...decomposeRotateScale(
-      translate,
-      a,
-      b,
-      c,
-      d,
-      roundedMatrix,
-      floatPrecision,
-      matrixPrecision,
-    ),
+  let decompositions = decomposeRotateScale(
+    translate,
+    originalMatrix,
+    roundedMatrix,
+    floatPrecision,
+    matrixPrecision,
   );
+  if (decompositions.length) {
+    return decompositions;
+  }
+  decompositions = decomposeScaleRotate(
+    translate,
+    originalMatrix,
+    roundedMatrix,
+    floatPrecision,
+    matrixPrecision,
+  );
+  if (decompositions.length) {
+    return decompositions;
+  }
 
-  return decompositions;
+  return [];
 };
 
 /**
@@ -199,10 +206,7 @@ function addADigitToOneTransform(rounded, original) {
 
 /**
  * @param {TransformItem|undefined} translate
- * @param {number} a
- * @param {number} b
- * @param {number} c
- * @param {number} d
+ * @param {TransformItem} originalMatrix
  * @param {TransformItem} roundedMatrix
  * @param {number} floatPrecision
  * @param {number} matrixPrecision
@@ -210,16 +214,18 @@ function addADigitToOneTransform(rounded, original) {
  */
 function decomposeRotateScale(
   translate,
-  a,
-  b,
-  c,
-  d,
+  originalMatrix,
   roundedMatrix,
   floatPrecision,
   matrixPrecision,
 ) {
+  let [a, b, c, d] = originalMatrix.data;
+
   let sx = Math.hypot(a, b);
   const sy = Math.hypot(c, d);
+  if (sx === 0 || sy === 0) {
+    return [];
+  }
   let cos = a / sx;
   let sin = b / sx;
   const cos2 = d / sy;
@@ -229,54 +235,120 @@ function decomposeRotateScale(
     sx = -sx;
     cos = -cos;
     sin = -sin;
-    a = -a;
-    b = -b;
   }
 
-  // If we get the same angle with both the sx and sy calculations, it's in the form rotate()scale().
-  if (toFixed(cos - cos2, floatPrecision) === 0) {
-    // Find the angle. asin() is in the range -pi/2 to pi/2, acos from 0 to pi, so adjust accordingly depending on signs.
-    // Then average acos and asin.
-    let acos = Math.acos(cos);
-    let asin = Math.asin(sin);
-    if (Number.isNaN(asin) || Number.isNaN(acos)) {
-      return [];
-    }
-    if (b < 0) {
-      // sin is negative, so angle is between -pi and 0.
-      acos = -acos;
-      if (a < 0) {
-        // Both sin and cos are negative, so angle is between -pi and -pi/2.
-        asin = -Math.PI - asin;
-      }
-    } else {
-      // sin is positive, so angle is between 0 and pi.
-      if (a < 0) {
-        // angle is between pi/2 and pi.
-        asin = Math.PI - asin;
-      }
-    }
+  const degrees = findRotation(cos, sin, cos2, floatPrecision);
+  if (degrees === undefined) {
+    return [];
+  }
 
-    const result = [];
-    if (translate) {
-      result.push(translate);
-    }
+  const result = [];
+  if (translate) {
+    result.push(translate);
+  }
 
-    const degrees = ((acos + asin) * 90) / Math.PI;
-    result.push({ name: 'rotate', data: [degrees, 0, 0] });
-    result.push({ name: 'scale', data: [sx, sy] });
-    const rounded = roundToMatrix(
-      result,
-      roundedMatrix,
-      floatPrecision,
-      matrixPrecision,
-    );
-    if (rounded) {
-      return [rounded];
+  result.push({ name: 'rotate', data: [degrees, 0, 0] });
+  result.push({ name: 'scale', data: [sx, sy] });
+  const rounded = roundToMatrix(
+    result,
+    roundedMatrix,
+    floatPrecision,
+    matrixPrecision,
+  );
+
+  return rounded ? [rounded] : [];
+}
+
+/**
+ * @param {TransformItem|undefined} translate
+ * @param {TransformItem} originalMatrix
+ * @param {TransformItem} roundedMatrix
+ * @param {number} floatPrecision
+ * @param {number} matrixPrecision
+ * @returns {TransformItem[][]}
+ */
+function decomposeScaleRotate(
+  translate,
+  originalMatrix,
+  roundedMatrix,
+  floatPrecision,
+  matrixPrecision,
+) {
+  let [a, b, c, d] = originalMatrix.data;
+
+  let sx = Math.hypot(a, c);
+  const sy = Math.hypot(b, d);
+  if (sx === 0 || sy === 0) {
+    return [];
+  }
+  let cos = a / sx;
+  let sin = b / sy;
+  const cos2 = d / sy;
+
+  if (toFixed(cos + cos2, floatPrecision) === 0) {
+    // Scales have opposite signs so the calculated cosines are opposites. Invert sx and invert the cosine.
+    sx = -sx;
+    cos = -cos;
+  }
+
+  const degrees = findRotation(cos, sin, cos2, floatPrecision);
+  if (degrees === undefined) {
+    return [];
+  }
+
+  const result = [];
+  if (translate) {
+    result.push(translate);
+  }
+
+  result.push({ name: 'scale', data: [sx, sy] });
+  result.push({ name: 'rotate', data: [degrees, 0, 0] });
+  const rounded = roundToMatrix(
+    result,
+    roundedMatrix,
+    floatPrecision,
+    matrixPrecision,
+  );
+
+  return rounded ? [rounded] : [];
+}
+
+/**
+ *
+ * @param {number} cos
+ * @param {number} sin
+ * @param {number} cos2
+ * @param {number} floatPrecision
+ * @returns {number|undefined}
+ */
+function findRotation(cos, sin, cos2, floatPrecision) {
+  if (toFixed(cos - cos2, floatPrecision) !== 0) {
+    return;
+  }
+
+  // Find the angle. asin() is in the range -pi/2 to pi/2, acos from 0 to pi, so adjust accordingly depending on signs.
+  // Then average acos and asin.
+  let acos = Math.acos(cos);
+  let asin = Math.asin(sin);
+  if (Number.isNaN(asin) || Number.isNaN(acos)) {
+    return;
+  }
+  if (sin < 0) {
+    // sin is negative, so angle is between -pi and 0.
+    acos = -acos;
+    if (cos < 0) {
+      // Both sin and cos are negative, so angle is between -pi and -pi/2.
+      asin = -Math.PI - asin;
+    }
+  } else {
+    // sin is positive, so angle is between 0 and pi.
+    if (cos < 0) {
+      // angle is between pi/2 and pi.
+      asin = Math.PI - asin;
     }
   }
 
-  return [];
+  return ((acos + asin) * 90) / Math.PI;
 }
 
 /**

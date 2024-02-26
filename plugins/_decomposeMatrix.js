@@ -263,7 +263,7 @@ function decomposeRotateScale(
   }
 
   // If there's a translate, try to merge it with the rotate.
-  if (translate) {
+  if (translate && translate.data[0] % 360 !== 0) {
     const merged = mergeTranslateAndRotate(
       translate.data[0],
       translate.data[1],

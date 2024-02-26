@@ -293,7 +293,7 @@ const decomposeQRCD = (matrix) => {
  * @param {number} a
  * @returns {TransformItem}
  */
-const mergeTranslateAndRotate = (tx, ty, a) => {
+export const mergeTranslateAndRotate = (tx, ty, a) => {
   // From https://www.w3.org/TR/SVG11/coords.html#TransformAttribute:
   // We have translate(tx,ty) rotate(a). This is equivalent to [cos(a) sin(a) -sin(a) cos(a) tx ty].
   //

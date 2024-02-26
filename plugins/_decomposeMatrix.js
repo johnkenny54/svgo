@@ -1,5 +1,5 @@
 import { toFixed } from '../lib/svgo/tools.js';
-import { transformsMultiply } from './_transforms.js';
+import { mergeTranslateAndRotate, transformsMultiply } from './_transforms.js';
 
 /**
  * @typedef {{ name: string, data: number[] }} TransformItem
@@ -256,7 +256,34 @@ function decomposeRotateScale(
     matrixPrecision,
   );
 
-  return rounded ? [rounded] : [];
+  const allResults = [];
+
+  if (rounded) {
+    allResults.push(rounded);
+  }
+
+  // If there's a translate, try to merge it with the rotate.
+  if (translate) {
+    const merged = mergeTranslateAndRotate(
+      translate.data[0],
+      translate.data[1],
+      degrees,
+    );
+    if (merged) {
+      const result = [merged, { name: 'scale', data: [sx, sy] }];
+      const rounded = roundToMatrix(
+        result,
+        roundedMatrix,
+        floatPrecision,
+        matrixPrecision,
+      );
+      if (rounded) {
+        allResults.push(rounded);
+      }
+    }
+  }
+
+  return allResults;
 }
 
 /**

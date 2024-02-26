@@ -228,15 +228,16 @@ function normalize(transforms) {
    * @returns {TransformItem[]}
    */
   function shortenTransform(t) {
+    let [a, b, c, d, e, f] = t.data;
     switch (t.name) {
       case 'matrix':
-        if (t.data[1] === 0 && t.data[2] === 0) {
+        if (b === 0 && c === 0) {
           // translate()scale()
           const result = [];
-          if (t.data[4] !== 0 || t.data[5] !== 0) {
+          if (e !== 0 || f !== 0) {
             result.push({ name: 'translate', data: [t.data[4], t.data[5]] });
           }
-          if (t.data[0] !== 1 || t.data[3] !== 1) {
+          if (a !== 1 || d !== 1) {
             result.push({ name: 'scale', data: [t.data[0], t.data[3]] });
           }
           if (result.length < 2) {
@@ -245,21 +246,16 @@ function normalize(transforms) {
           return getShortest([[t], result]).transforms;
         }
         // Look for rotate(+/-90).
-        if (
-          t.data[0] === 0 &&
-          t.data[3] === 0 &&
-          t.data[4] === 0 &&
-          t.data[5] === 0
-        ) {
+        if (a === 0 && d === 0 && e === 0 && f === 0) {
           let angle;
-          switch (t.data[1]) {
+          switch (b) {
             case 1:
-              if (t.data[2] === -1) {
+              if (c === -1) {
                 angle = 90;
               }
               break;
             case -1:
-              if (t.data[2] === 1) {
+              if (c === 1) {
                 angle = -90;
               }
               break;
@@ -267,6 +263,29 @@ function normalize(transforms) {
           if (angle) {
             return [{ name: 'rotate', data: [angle, 0, 0] }];
           }
+        }
+        // Look for skew(+/-45)
+        if (
+          e === 0 &&
+          f === 0 &&
+          ((Math.abs(a) === Math.abs(c) && b === 0) ||
+            (Math.abs(b) === Math.abs(d) && c === 0))
+        ) {
+          // skewX()
+          const sx = a;
+          const sy = d;
+          const result = [];
+          if (sx !== 1 || sy !== 1) {
+            result.push({ name: 'scale', data: [sx, sy] });
+          }
+          if (b === 0) {
+            const angle = c > 0 ? 45 : -45;
+            result.push({ name: 'skewX', data: [a < 0 ? -angle : angle] });
+          } else {
+            const angle = b > 0 ? 45 : -45;
+            result.push({ name: 'skewY', data: [d < 0 ? -angle : angle] });
+          }
+          return result;
         }
         break;
     }

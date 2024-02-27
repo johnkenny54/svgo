@@ -3,7 +3,7 @@
     <rect width="10" height="20" transform="matrix(1 0 0 1 50 90),matrix(0.707 -0.707 0.707 0.707 0 0) ,matrix(1 0 0 1 130 160)"/>
     <rect width="10" height="20" transform="translate(50 90) , rotate(-45)   translate(130 160)"/>
     <rect width="10" height="20" transform="matrix(0.707 -0.707 0.707 0.707 255.03 111.21) scale(2)"/>
-    <rect width="10" height="20" transform="matrix(0.707 -0.707 0.707 0.707 255.03 111.21) skewX(45)"/>
+    <rect width="10" height="20" transform="matrix(0.70711,-0.70711,1.41421,0,255.03,111.21)"/>
     <rect width="10" height="20" transform="matrix( 0.707 -0.707 0.707 0.707 255.03 111.21 ) skewY( 45 )"/>
     <rect width="10" height="20" transform="matrix(1 0 1 1 0 0)"/>
     <rect width="10" height="20" transform="matrix(1.25,0,0,-1.25,0,56.26) scale(1,-1)"/>

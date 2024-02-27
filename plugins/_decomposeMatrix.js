@@ -217,26 +217,8 @@ function decomposeRotateScale(
   floatPrecision,
   matrixPrecision,
 ) {
-  let [a, b, c, d] = originalMatrix.data;
-
-  let sx = Math.hypot(a, b);
-  const sy = Math.hypot(c, d);
-  if (sx === 0 || sy === 0) {
-    return [];
-  }
-  let cos = a / sx;
-  let sin = b / sx;
-  const cos2 = d / sy;
-
-  if (toFixed(cos + cos2, floatPrecision) === 0) {
-    // Scales have opposite signs so the calculated cosines are opposites. Invert sx and invert the sine and cosine.
-    sx = -sx;
-    cos = -cos;
-    sin = -sin;
-  }
-
-  const degrees = findRotation(cos, sin, cos2, floatPrecision);
-  if (degrees === undefined) {
+  const rotateScale = getRotateScale(originalMatrix.data, floatPrecision);
+  if (!rotateScale) {
     return [];
   }
 
@@ -244,9 +226,7 @@ function decomposeRotateScale(
   if (translate) {
     result.push(translate);
   }
-
-  result.push({ name: 'rotate', data: [degrees, 0, 0] });
-  result.push({ name: 'scale', data: [sx, sy] });
+  result.push(...rotateScale);
 
   return roundAndFindVariants(
     result,
@@ -283,22 +263,24 @@ function decomposeRotateSkew(
     return [];
   }
 
+  // The remaining matrix is a rotate matrix with possibly a small scale adjustment, include the scale for precision.
+  const rotateScale = getRotateScale([a, b, -b, a], floatPrecision);
+  if (!rotateScale) {
+    return [];
+  }
+  console.log(rotateScale);
+
   const result = [];
   if (translate) {
     result.push(translate);
   }
-
-  const cos2 = ((c + b) * 2) / (tanA + tanB);
-  const rotationDegrees = findRotation(a, b, cos2, floatPrecision);
-  if (rotationDegrees === undefined) {
-    return [];
-  }
-  result.push({ name: 'rotate', data: [rotationDegrees, 0, 0] });
+  result.push(...rotateScale);
 
   const atanA = Math.atan(tanA);
   const atanB = Math.atan(tanB);
   const skewDegrees = ((atanA + atanB) * 90) / Math.PI;
   result.push({ name: 'skewX', data: [skewDegrees] });
+  console.log(result);
 
   return roundAndFindVariants(
     result,
@@ -398,6 +380,41 @@ function findRotation(cos, sin, cos2, floatPrecision) {
   }
 
   return ((acos + asin) * 90) / Math.PI;
+}
+
+/**
+ * @param {number[]} data
+ * @param {number} floatPrecision
+ * @returns {TransformItem[]|undefined}
+ */
+function getRotateScale(data, floatPrecision) {
+  let [a, b, c, d] = data;
+
+  let sx = Math.hypot(a, b);
+  const sy = Math.hypot(c, d);
+  if (sx === 0 || sy === 0) {
+    return;
+  }
+  let cos = a / sx;
+  let sin = b / sx;
+  const cos2 = d / sy;
+
+  if (toFixed(cos + cos2, floatPrecision) === 0) {
+    // Scales have opposite signs so the calculated cosines are opposites. Invert sx and invert the sine and cosine.
+    sx = -sx;
+    cos = -cos;
+    sin = -sin;
+  }
+
+  const degrees = findRotation(cos, sin, cos2, floatPrecision);
+  if (degrees === undefined) {
+    return;
+  }
+
+  return [
+    { name: 'rotate', data: [degrees, 0, 0] },
+    { name: 'scale', data: [sx, sy] },
+  ];
 }
 
 /**
@@ -541,15 +558,11 @@ function roundedMatchesTarget(
   floatPrecision,
   matrixPrecision,
 ) {
-  const actualMatrix = transformsMultiply(rounded);
-  const roundedActualData = actualMatrix.data.map((n, index) => {
-    const targetDigits = getNumberOfDecimalDigits(targetMatrix.data[index]);
-    const precision =
-      index < 4
-        ? Math.min(matrixPrecision, targetDigits)
-        : Math.min(floatPrecision, targetDigits);
-    return toFixed(n, precision);
-  });
+  const multiplied = roundTransform(
+    transformsMultiply(rounded),
+    floatPrecision,
+    matrixPrecision,
+  );
 
-  return matrixDataIsEqual(roundedActualData, targetMatrix.data);
+  return matrixDataIsEqual(multiplied.data, targetMatrix.data);
 }

@@ -50,11 +50,10 @@ const TEST_CASES = [
     3,
     5,
   ],
-  // Should work when target matrix is lower precision than specified.
   [
-    'rotate(-45 261.757 -252.243)skewX(45)',
-    'matrix(.707 -.707 1.414 0 255.03 111.21)',
-    'rotate(-45 261.76 -252.24)skewX(45)',
+    'translate(337.33332, -174.66664)rotate(135)scale(5.656853683806956, 1.885618601709121)',
+    'matrix(-4,4,-1.33333,-1.33333,337.333,-174.667)',
+    'translate(337.333 -174.667)rotate(135)scale(5.65685 1.88562)',
     3,
     5,
   ],

@@ -25,25 +25,23 @@ export const decompose = (
   const translate =
     e !== 0 || f !== 0 ? { name: 'translate', data: [e, f] } : undefined;
 
-  let decompositions = decomposeRotateScale(
-    translate,
-    originalMatrix,
-    roundedMatrix,
-    floatPrecision,
-    matrixPrecision,
-  );
-  if (decompositions.length) {
-    return decompositions;
-  }
-  decompositions = decomposeScaleRotate(
-    translate,
-    originalMatrix,
-    roundedMatrix,
-    floatPrecision,
-    matrixPrecision,
-  );
-  if (decompositions.length) {
-    return decompositions;
+  const decompositionFunctions = [
+    decomposeRotateScale,
+    decomposeScaleRotate,
+    decomposeRotateSkew,
+  ];
+
+  for (const fn of decompositionFunctions) {
+    const decompositions = fn(
+      translate,
+      originalMatrix,
+      roundedMatrix,
+      floatPrecision,
+      matrixPrecision,
+    );
+    if (decompositions.length) {
+      return decompositions;
+    }
   }
 
   return [];
@@ -249,41 +247,65 @@ function decomposeRotateScale(
 
   result.push({ name: 'rotate', data: [degrees, 0, 0] });
   result.push({ name: 'scale', data: [sx, sy] });
-  const rounded = roundToMatrix(
+
+  return roundAndFindVariants(
     result,
     roundedMatrix,
     floatPrecision,
     matrixPrecision,
   );
+}
 
-  const allResults = [];
+/**
+ * @param {TransformItem|undefined} translate
+ * @param {TransformItem} originalMatrix
+ * @param {TransformItem} roundedMatrix
+ * @param {number} floatPrecision
+ * @param {number} matrixPrecision
+ * @returns {TransformItem[][]}
+ */
+function decomposeRotateSkew(
+  translate,
+  originalMatrix,
+  roundedMatrix,
+  floatPrecision,
+  matrixPrecision,
+) {
+  const [a, b, c, d] = originalMatrix.data;
+  if (a === 0 || b === 0) {
+    return [];
+  }
+  const tanA = (c + b) / a;
+  const tanB = (d - a) / b;
 
-  if (rounded) {
-    allResults.push(rounded);
+  if (toFixed(tanA - tanB, floatPrecision) !== 0) {
+    // We get a different angle with the 2 calculations; this is not a rotate()skewX() matrix.
+    return [];
   }
 
-  // If there's a translate, try to merge it with the rotate.
-  if (translate && degrees % 360 !== 0) {
-    const merged = mergeTranslateAndRotate(
-      translate.data[0],
-      translate.data[1],
-      degrees,
-    );
-    if (merged) {
-      const result = [merged, { name: 'scale', data: [sx, sy] }];
-      const rounded = roundToMatrix(
-        result,
-        roundedMatrix,
-        floatPrecision,
-        matrixPrecision,
-      );
-      if (rounded) {
-        allResults.push(rounded);
-      }
-    }
+  const result = [];
+  if (translate) {
+    result.push(translate);
   }
 
-  return allResults;
+  const cos2 = ((c + b) * 2) / (tanA + tanB);
+  const rotationDegrees = findRotation(a, b, cos2, floatPrecision);
+  if (rotationDegrees === undefined) {
+    return [];
+  }
+  result.push({ name: 'rotate', data: [rotationDegrees, 0, 0] });
+
+  const atanA = Math.atan(tanA);
+  const atanB = Math.atan(tanB);
+  const skewDegrees = ((atanA + atanB) * 90) / Math.PI;
+  result.push({ name: 'skewX', data: [skewDegrees] });
+
+  return roundAndFindVariants(
+    result,
+    roundedMatrix,
+    floatPrecision,
+    matrixPrecision,
+  );
 }
 
 /**
@@ -346,7 +368,7 @@ function decomposeScaleRotate(
  * @param {number} sin
  * @param {number} cos2
  * @param {number} floatPrecision
- * @returns {number|undefined}
+ * @returns {number|undefined} rotation angle in degrees
  */
 function findRotation(cos, sin, cos2, floatPrecision) {
   if (toFixed(cos - cos2, floatPrecision) !== 0) {
@@ -379,12 +401,12 @@ function findRotation(cos, sin, cos2, floatPrecision) {
 }
 
 /**
- * @param {TransformItem} m1
- * @param {TransformItem} m2
+ * @param {number[]} m1
+ * @param {number[]} m2
  */
-function matricesAreEqual(m1, m2) {
+function matrixDataIsEqual(m1, m2) {
   for (let index = 0; index < 6; index++) {
-    if (m1.data[index] !== m2.data[index]) {
+    if (m1[index] !== m2[index]) {
       return false;
     }
   }
@@ -452,6 +474,62 @@ function removeADigitFromOneTransform(t) {
 }
 
 /**
+ *
+ * @param {TransformItem[]} result
+ * @param {TransformItem} targetMatrix
+ * @param {number} floatPrecision
+ * @param {number} matrixPrecision
+ * @returns {TransformItem[][]}
+ */
+function roundAndFindVariants(
+  result,
+  targetMatrix,
+  floatPrecision,
+  matrixPrecision,
+) {
+  const allResults = [];
+
+  const rounded = roundToMatrix(
+    result,
+    targetMatrix,
+    floatPrecision,
+    matrixPrecision,
+  );
+
+  if (rounded) {
+    allResults.push(rounded);
+  }
+
+  const translate =
+    result.length > 0 && result[0].name === 'translate' ? result[0] : undefined;
+  const degrees =
+    result.length > 1 && result[1].name === 'rotate' ? result[1].data[0] : 0;
+
+  // If there's a translate, try to merge it with the rotate.
+  if (translate && degrees % 360 !== 0) {
+    const merged = mergeTranslateAndRotate(
+      translate.data[0],
+      translate.data[1],
+      degrees,
+    );
+    if (merged) {
+      const mergedResult = [merged, ...result.slice(2)];
+      const rounded = roundToMatrix(
+        mergedResult,
+        targetMatrix,
+        floatPrecision,
+        matrixPrecision,
+      );
+      if (rounded) {
+        allResults.push(rounded);
+      }
+    }
+  }
+
+  return allResults;
+}
+
+/**
  * @param {TransformItem[]} rounded
  * @param {TransformItem} targetMatrix
  * @param {number} floatPrecision
@@ -463,10 +541,15 @@ function roundedMatchesTarget(
   floatPrecision,
   matrixPrecision,
 ) {
-  const actualMatrix = roundTransform(
-    transformsMultiply(rounded),
-    floatPrecision,
-    matrixPrecision,
-  );
-  return matricesAreEqual(actualMatrix, targetMatrix);
+  const actualMatrix = transformsMultiply(rounded);
+  const roundedActualData = actualMatrix.data.map((n, index) => {
+    const targetDigits = getNumberOfDecimalDigits(targetMatrix.data[index]);
+    const precision =
+      index < 4
+        ? Math.min(matrixPrecision, targetDigits)
+        : Math.min(floatPrecision, targetDigits);
+    return toFixed(n, precision);
+  });
+
+  return matrixDataIsEqual(roundedActualData, targetMatrix.data);
 }

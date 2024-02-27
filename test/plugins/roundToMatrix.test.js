@@ -1,5 +1,6 @@
 import { transform2js } from '../../plugins/_transforms.js';
-import { adaptiveRound, jsToString } from '../../plugins/minifyTransforms.js';
+import { jsToString } from '../../plugins/minifyTransforms.js';
+import { roundToMatrix } from '../../plugins/_decomposeMatrix.js';
 
 /** @type [string,string,string|undefined,number?,number?][] */
 const TEST_CASES = [
@@ -49,6 +50,14 @@ const TEST_CASES = [
     3,
     5,
   ],
+  // Should work when target matrix is lower precision than specified.
+  [
+    'rotate(-45 261.757 -252.243)skewX(45)',
+    'matrix(.707 -.707 1.414 0 255.03 111.21)',
+    'rotate(-45 261.76 -252.24)skewX(45)',
+    3,
+    5,
+  ],
 ];
 
 for (const testCase of TEST_CASES) {
@@ -57,7 +66,7 @@ for (const testCase of TEST_CASES) {
     const input = transform2js(inputStr);
     const floatPrecision = testCase[3] ?? 3;
     const matrixPrecision = testCase[4] ?? 5;
-    const result = adaptiveRound(
+    const result = roundToMatrix(
       input,
       transform2js(testCase[1])[0],
       floatPrecision,

@@ -9,7 +9,7 @@ Convert matrix to translate()rotate().
 @@@
 
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -50 80 80">
-    <rect x="0" y="10" width="5" height="8" transform="rotate(-150 2.036 1.598)"/>
+    <rect x="0" y="10" width="5" height="8" transform="rotate(-150 2 1.6)"/>
 </svg>
 
 @@@

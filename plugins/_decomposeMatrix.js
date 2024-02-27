@@ -251,24 +251,43 @@ function decomposeRotateSkew(
   floatPrecision,
   matrixPrecision,
 ) {
+  /**
+   * @param {string} name
+   * @param {number} tanA
+   * @param {number} tanB
+   */
+  function getSkew(name, tanA, tanB) {
+    if (toFixed(tanA - tanB, floatPrecision) === 0) {
+      const atanA = Math.atan(tanA);
+      const atanB = Math.atan(tanB);
+      const skewDegrees = ((atanA + atanB) * 90) / Math.PI;
+      return { name: name, data: [skewDegrees] };
+    }
+  }
+
   const [a, b, c, d] = originalMatrix.data;
-  if (a === 0 || b === 0) {
-    return [];
-  }
-  const tanA = (c + b) / a;
-  const tanB = (d - a) / b;
+  let skew;
+  let rotateScale;
 
-  if (toFixed(tanA - tanB, floatPrecision) !== 0) {
-    // We get a different angle with the 2 calculations; this is not a rotate()skewX() matrix.
-    return [];
+  if (a !== 0 && b !== 0) {
+    // Look for skewX.
+    const tanA = (c + b) / a;
+    const tanB = (d - a) / b;
+    skew = getSkew('skewX', tanA, tanB);
+    // The remaining matrix is a rotate matrix with possibly a small scale adjustment, include the scale for precision.
+    rotateScale = getRotateScale([a, b, -b, a], floatPrecision);
+  }
+  if (!skew && c !== 0 && d !== 0) {
+    // Look for skewY.
+    const tanA = (b + c) / d;
+    const tanB = (a - d) / c;
+    skew = getSkew('skewY', tanA, tanB);
+    rotateScale = getRotateScale([d, -c, c, d], floatPrecision);
   }
 
-  // The remaining matrix is a rotate matrix with possibly a small scale adjustment, include the scale for precision.
-  const rotateScale = getRotateScale([a, b, -b, a], floatPrecision);
-  if (!rotateScale) {
+  if (!skew || !rotateScale) {
     return [];
   }
-  console.log(rotateScale);
 
   const result = [];
   if (translate) {
@@ -276,11 +295,7 @@ function decomposeRotateSkew(
   }
   result.push(...rotateScale);
 
-  const atanA = Math.atan(tanA);
-  const atanB = Math.atan(tanB);
-  const skewDegrees = ((atanA + atanB) * 90) / Math.PI;
-  result.push({ name: 'skewX', data: [skewDegrees] });
-  console.log(result);
+  result.push(skew);
 
   return roundAndFindVariants(
     result,

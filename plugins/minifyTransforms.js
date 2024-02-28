@@ -34,24 +34,22 @@ export const fn = (root, params) => {
   return {
     element: {
       enter: (node) => {
-        if (node.attributes.transform) {
-          node.attributes.transform = minifyTransforms(
-            node.attributes.transform,
-            calculatedParams,
-          );
+        /** @param {string} attName */
+        function processAttribute(attName) {
+          const input = node.attributes[attName];
+          if (input === undefined) {
+            return;
+          }
+          const output = minifyTransforms(input, calculatedParams);
+          if (output) {
+            node.attributes[attName] = output;
+          } else {
+            delete node.attributes[attName];
+          }
         }
-        if (node.attributes.gradientTransform) {
-          node.attributes.gradientTransform = minifyTransforms(
-            node.attributes.gradientTransform,
-            calculatedParams,
-          );
-        }
-        if (node.attributes.patternTransform) {
-          node.attributes.patternTransform = minifyTransforms(
-            node.attributes.patternTransform,
-            calculatedParams,
-          );
-        }
+        ['transform', 'gradientTransform', 'patternTransform'].forEach(
+          (attName) => processAttribute(attName),
+        );
       },
     },
   };

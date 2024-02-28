@@ -17,7 +17,7 @@ Merge adjacent rotates.
     <rect x="0" y="10" width="5" height="8" fill="red" transform="rotate(47)"/>
     <rect x="0" y="10" width="5" height="8" fill="red" transform="rotate(47)"/>
     <rect x="0" y="10" width="5" height="8" fill="red" transform="rotate(23)rotate(24 2 3)"/>
-    <rect x="0" y="10" width="5" height="8" fill="red" transform=""/>
+    <rect x="0" y="10" width="5" height="8" fill="red"/>
     <rect x="0" y="10" width="5" height="8" fill="red" transform="translate(5)"/>
     <rect x="0" y="10" width="5" height="8" fill="red" transform="scale(-1)"/>
 </svg>

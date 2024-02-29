@@ -120,7 +120,7 @@ function minifyTransforms(transforms, params) {
 function getShortest(candidates) {
   let shortest = jsToString(candidates[0]);
   let shortestIndex = 0;
-  for (let index = 0; index < candidates.length; index++) {
+  for (let index = 1; index < candidates.length; index++) {
     const str = jsToString(candidates[index]);
     if (str.length < shortest.length) {
       shortest = str;
@@ -135,6 +135,49 @@ function getShortest(candidates) {
  * @returns {TransformItem[]}
  */
 function normalize(transforms) {
+  /**
+   * @param {TransformItem[]} transforms
+   */
+  function mergeAdjacentScaleRotate(transforms) {
+    const merged = [];
+    for (let index = 0; index < transforms.length; index++) {
+      const t = transforms[index];
+      const next = transforms[index + 1];
+      if (next) {
+        switch (t.name) {
+          case 'rotate':
+            // If the next one is a scale, use the shortest of the current sequence and
+            // rotate (a+180)scale(-sx,-sy).
+            if (next.name === 'scale') {
+              const current = [t, next];
+              const rNew = {
+                name: 'rotate',
+                data: [exactAdd(t.data[0], 180), ...t.data.slice(1)],
+              };
+              const sx = next.data[0];
+              const sy = next.data[1] ?? sx;
+              if (sx === -1 && sy === -1) {
+                // Scale will drop out, this will always be shorter.
+                merged.push(rNew);
+                index++;
+                continue;
+              }
+              const shortest = getShortest([
+                current,
+                [rNew, { name: 'scale', data: [-sx, -sy] }],
+              ]);
+              merged.push(...shortest.transforms);
+              index++;
+              continue;
+            }
+            break;
+        }
+      }
+      merged.push(t);
+    }
+    return merged;
+  }
+
   /**
    *
    * @param {TransformItem} t1
@@ -208,84 +251,6 @@ function normalize(transforms) {
         data: [a, b, c, d, exactAdd(e, e1), exactAdd(f, f1)],
       };
     }
-  }
-
-  /**
-   * @param {TransformItem} t
-   * @returns {TransformItem[]}
-   */
-  function shortenTransform(t) {
-    let [a, b, c, d, e, f] = t.data;
-    switch (t.name) {
-      case 'matrix':
-        if (b === 0 && c === 0) {
-          // translate()scale()
-          const result = [];
-          if (e !== 0 || f !== 0) {
-            result.push({ name: 'translate', data: [t.data[4], t.data[5]] });
-          }
-          if (a !== 1 || d !== 1) {
-            result.push({ name: 'scale', data: [t.data[0], t.data[3]] });
-          }
-          if (result.length < 2) {
-            return result;
-          }
-          return getShortest([[t], result]).transforms;
-        }
-        // Look for rotate(+/-90).
-        if (a === 0 && d === 0 && e === 0 && f === 0) {
-          let angle;
-          switch (b) {
-            case 1:
-              if (c === -1) {
-                angle = 90;
-              }
-              break;
-            case -1:
-              if (c === 1) {
-                angle = -90;
-              }
-              break;
-          }
-          if (angle) {
-            return [{ name: 'rotate', data: [angle, 0, 0] }];
-          }
-        }
-        // Look for skew(+/-45)
-        if (
-          e === 0 &&
-          f === 0 &&
-          ((Math.abs(a) === Math.abs(c) && b === 0) ||
-            (Math.abs(b) === Math.abs(d) && c === 0))
-        ) {
-          // skewX()
-          const sx = a;
-          const sy = d;
-          const result = [];
-          if (sx !== 1 || sy !== 1) {
-            result.push({ name: 'scale', data: [sx, sy] });
-          }
-          if (b === 0) {
-            const angle = c > 0 ? 45 : -45;
-            result.push({ name: 'skewX', data: [a < 0 ? -angle : angle] });
-          } else {
-            const angle = b > 0 ? 45 : -45;
-            result.push({ name: 'skewY', data: [d < 0 ? -angle : angle] });
-          }
-          return result;
-        }
-        break;
-      case 'rotate': {
-        let degrees = t.data[0] % 360;
-        if (degrees > 350) {
-          degrees = exactAdd(degrees, -360);
-        } else if (degrees <= -100) {
-          degrees = exactAdd(degrees, 360);
-        }
-        return [{ name: 'rotate', data: [degrees, ...t.data.slice(1)] }];
-      }
-    }
-    return [t];
   }
 
   /**
@@ -364,6 +329,71 @@ function normalize(transforms) {
     }
   }
 
+  /**
+   * @param {TransformItem} t
+   * @returns {TransformItem[]}
+   */
+  function shortenTransform(t) {
+    let [a, b, c, d, e, f] = t.data;
+    switch (t.name) {
+      case 'matrix':
+        if (b === 0 && c === 0) {
+          // translate()scale()
+          const result = [];
+          if (e !== 0 || f !== 0) {
+            result.push({ name: 'translate', data: [t.data[4], t.data[5]] });
+          }
+          if (a !== 1 || d !== 1) {
+            result.push({ name: 'scale', data: [t.data[0], t.data[3]] });
+          }
+          if (result.length < 2) {
+            return result;
+          }
+          return getShortest([[t], result]).transforms;
+        }
+        // Look for rotate(+/-90).
+        if (a === 0 && b !== 0 && c !== 0 && d === 0 && e === 0 && f === 0) {
+          const sx = b;
+          const sy = -c;
+          if (sx === 1 && sy === 1) {
+            return [{ name: 'rotate', data: [90, 0, 0] }];
+          }
+          if (sx === -1 && sy === -1) {
+            return [{ name: 'rotate', data: [-90, 0, 0] }];
+          }
+          return [
+            { name: 'rotate', data: [90, 0, 0] },
+            { name: 'scale', data: [sx, sy] },
+          ];
+        }
+        // Look for skew(+/-45)
+        if (
+          e === 0 &&
+          f === 0 &&
+          ((Math.abs(a) === Math.abs(c) && b === 0) ||
+            (Math.abs(b) === Math.abs(d) && c === 0))
+        ) {
+          // skewX()
+          const sx = a;
+          const sy = d;
+          const result = [];
+          if (sx !== 1 || sy !== 1) {
+            result.push({ name: 'scale', data: [sx, sy] });
+          }
+          if (b === 0) {
+            const angle = c > 0 ? 45 : -45;
+            result.push({ name: 'skewX', data: [a < 0 ? -angle : angle] });
+          } else {
+            const angle = b > 0 ? 45 : -45;
+            result.push({ name: 'skewY', data: [d < 0 ? -angle : angle] });
+          }
+          return result;
+        }
+        break;
+    }
+    return [t];
+  }
+
   let tryToMergeAgain = true;
   let mergedTransforms = [];
   while (tryToMergeAgain) {
@@ -397,7 +427,8 @@ function normalize(transforms) {
   for (const transform of mergedTransforms) {
     shortened.push(...shortenTransform(transform));
   }
-  return shortened;
+
+  return mergeAdjacentScaleRotate(shortened);
 }
 
 /**
@@ -413,15 +444,22 @@ export function jsToString(transformJS) {
    */
   function minifyData(transform) {
     switch (transform.name) {
-      case 'rotate':
+      case 'rotate': {
+        let degrees = transform.data[0] % 360;
+        if (degrees > 350) {
+          degrees = exactAdd(degrees, -360);
+        } else if (degrees <= -100) {
+          degrees = exactAdd(degrees, 360);
+        }
         if (
           transform.data.length > 1 &&
           transform.data[1] === 0 &&
           transform.data[2] === 0
         ) {
-          return transform.data.slice(0, 1);
+          return [degrees];
         }
-        break;
+        return [degrees, ...transform.data.slice(1)];
+      }
       case 'scale':
         if (transform.data[0] === transform.data[1]) {
           return transform.data.slice(0, 1);

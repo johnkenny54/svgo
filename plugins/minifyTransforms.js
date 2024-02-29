@@ -71,7 +71,7 @@ function minifyTransforms(transforms, params) {
 
   const roundedOriginal = roundExtremeValues(parsedOriginal, params);
 
-  const losslessOriginal = minifyTransformsLosslessly(roundedOriginal);
+  const losslessOriginal = normalize(roundedOriginal);
   const candidates = [losslessOriginal];
 
   if (shouldRound) {
@@ -92,7 +92,7 @@ function minifyTransforms(transforms, params) {
         floatPrecision,
         matrixPrecision,
       );
-      candidates.push(...decomposed.map((t) => minifyTransformsLosslessly(t)));
+      candidates.push(...decomposed.map((t) => normalize(t)));
       // Add the rounded matrix itself as a candidate.
       candidates.push([targetMatrixRounded]);
     }
@@ -106,7 +106,7 @@ function minifyTransforms(transforms, params) {
         matrixPrecision,
       );
       if (rounded) {
-        candidates.push(minifyTransformsLosslessly(rounded));
+        candidates.push(normalize(rounded));
       }
     }
   }
@@ -128,17 +128,6 @@ function getShortest(candidates) {
     }
   }
   return { transforms: candidates[shortestIndex], str: shortest };
-}
-
-/**
- * @param {TransformItem[]} transforms
- * @returns {TransformItem[]}
- */
-function minifyTransformsLosslessly(transforms) {
-  // Normalize to a matrix where we can.
-  const normalized = normalize(transforms);
-
-  return normalized;
 }
 
 /**
@@ -297,7 +286,11 @@ function normalize(transforms) {
     switch (t.name) {
       case 'rotate':
         {
-          if (t.data.length === 1 || (t.data[1] === 0 && t.data[2] === 0)) {
+          if (
+            t.data.length === 1 ||
+            (t.data[1] === 0 && t.data[2] === 0) ||
+            t.data[0] % 360 === 0
+          ) {
             // Convert to matrix if it's a multiple of 90 degrees.
             let cos, sin;
             switch (t.data[0] % 360) {

@@ -361,10 +361,11 @@ function normalize(transforms) {
           if (sx === -1 && sy === -1) {
             return [{ name: 'rotate', data: [-90, 0, 0] }];
           }
-          return [
+          const rs = [
             { name: 'rotate', data: [90, 0, 0] },
             { name: 'scale', data: [sx, sy] },
           ];
+          return getShortest([rs, [t]]).transforms;
         }
         // Look for skew(+/-45)
         if (

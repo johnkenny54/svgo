@@ -139,6 +139,32 @@ function normalize(transforms) {
    * @param {TransformItem[]} transforms
    */
   function mergeAdjacentScaleRotate(transforms) {
+    /**
+     *
+     * @param {TransformItem} origRotate
+     * @param {TransformItem} origScale
+     */
+    function getNewScaleAndRotate(origRotate, origScale) {
+      /** @type {{rotate:TransformItem,scale?:TransformItem}} */
+      const rs = {
+        rotate: {
+          name: 'rotate',
+          data: [
+            exactAdd(origRotate.data[0], 180),
+            ...origRotate.data.slice(1),
+          ],
+        },
+      };
+      const sx = origScale.data[0];
+      const sy = origScale.data[1] ?? sx;
+      if (sx === -1 && sy === -1) {
+        // Scale will drop out, this will always be shorter.
+        return rs;
+      }
+      rs.scale = { name: 'scale', data: [-sx, -sy] };
+      return rs;
+    }
+
     const merged = [];
     for (let index = 0; index < transforms.length; index++) {
       const t = transforms[index];
@@ -150,23 +176,39 @@ function normalize(transforms) {
             // rotate (a+180)scale(-sx,-sy).
             if (next.name === 'scale') {
               const current = [t, next];
-              const rNew = {
-                name: 'rotate',
-                data: [exactAdd(t.data[0], 180), ...t.data.slice(1)],
-              };
-              const sx = next.data[0];
-              const sy = next.data[1] ?? sx;
-              if (sx === -1 && sy === -1) {
-                // Scale will drop out, this will always be shorter.
-                merged.push(rNew);
+              const rs = getNewScaleAndRotate(t, next);
+              if (!rs.scale) {
+                merged.push(rs.rotate);
+                index++;
+                continue;
+              }
+              const shortest = getShortest([current, [rs.rotate, rs.scale]]);
+              merged.push(...shortest.transforms);
+              index++;
+              continue;
+            }
+            break;
+          case 'scale':
+            // If the next one is a rotate, use the shortest of the current sequence and
+            // scale(-sx,-sy)rotate (a+180).
+            if (next.name === 'rotate') {
+              const current = [t, next];
+              const rs = getNewScaleAndRotate(next, t);
+              if (!rs.scale) {
+                merged.push(rs.rotate);
                 index++;
                 continue;
               }
               const shortest = getShortest([
                 current,
-                [rNew, { name: 'scale', data: [-sx, -sy] }],
-              ]);
-              merged.push(...shortest.transforms);
+                [rs.scale, rs.rotate],
+              ]).transforms;
+              // If the scales are equal, flip the scale and the rotate so the order is predictable.
+              if (rs.scale.data[0] === rs.scale.data[1]) {
+                merged.push(shortest[1], shortest[0]);
+              } else {
+                merged.push(...shortest);
+              }
               index++;
               continue;
             }

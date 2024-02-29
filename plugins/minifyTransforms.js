@@ -275,6 +275,15 @@ function normalize(transforms) {
           return result;
         }
         break;
+      case 'rotate': {
+        let degrees = t.data[0] % 360;
+        if (degrees > 350) {
+          degrees = exactAdd(degrees, -360);
+        } else if (degrees <= -100) {
+          degrees = exactAdd(degrees, 360);
+        }
+        return [{ name: 'rotate', data: [degrees, ...t.data.slice(1)] }];
+      }
     }
     return [t];
   }

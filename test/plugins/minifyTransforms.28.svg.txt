@@ -18,11 +18,11 @@ Find scale()rotate().
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 100 150">
     <rect x="0" y="10" width="5" height="8" fill="red" transform="scale(2 3)rotate(31)"/>
     <rect x="0" y="10" width="5" height="8" fill="red" transform="scale(2.1 3)rotate(-31)"/>
-    <rect x="0" y="10" width="5" height="8" fill="red" transform="scale(2.17 3)rotate(-131)"/>
+    <rect x="0" y="10" width="5" height="8" fill="red" transform="scale(2.17 3)rotate(229)"/>
     <rect x="0" y="10" width="5" height="8" fill="red" transform="scale(2.17 3.01)rotate(132.1)"/>
     <rect x="0" y="10" width="5" height="8" fill="red" transform="scale(-2 3)rotate(31)"/>
     <rect x="0" y="10" width="5" height="8" fill="red" transform="scale(-2.1 3)rotate(149)"/>
-    <rect x="0" y="10" width="5" height="8" fill="red" transform="scale(-2.17 3)rotate(-131)"/>
+    <rect x="0" y="10" width="5" height="8" fill="red" transform="scale(-2.17 3)rotate(229)"/>
     <rect x="0" y="10" width="5" height="8" fill="red" transform="scale(-2.17 3.01)rotate(-47.9)"/>
 </svg>
 

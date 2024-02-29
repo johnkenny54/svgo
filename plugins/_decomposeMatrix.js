@@ -29,6 +29,7 @@ export const decompose = (
     decomposeRotateScale,
     decomposeScaleRotate,
     decomposeRotateSkew,
+    decomposeScaleSkew,
   ];
 
   for (const fn of decompositionFunctions) {
@@ -357,6 +358,49 @@ function decomposeScaleRotate(
   );
 
   return rounded ? [rounded] : [];
+}
+
+/**
+ * @param {TransformItem|undefined} translate
+ * @param {TransformItem} originalMatrix
+ * @param {TransformItem} roundedMatrix
+ * @param {number} floatPrecision
+ * @param {number} matrixPrecision
+ * @returns {TransformItem[][]}
+ */
+function decomposeScaleSkew(
+  translate,
+  originalMatrix,
+  roundedMatrix,
+  floatPrecision,
+  matrixPrecision,
+) {
+  /**
+   * @param {string} name
+   * @param {number} tan
+   */
+  function getScaleSkew(name, tan) {
+    const scale = { name: 'scale', data: [a, d] };
+    const skew = { name: name, data: [(Math.atan(tan) * 180) / Math.PI] };
+    const result = roundToMatrix(
+      [scale, skew],
+      roundedMatrix,
+      floatPrecision,
+      matrixPrecision,
+    );
+    if (!result) {
+      return [];
+    }
+    return [result];
+  }
+  let [a, b, c, d] = originalMatrix.data;
+  if (roundedMatrix.data[1] === 0 && a !== 0 && c !== 0 && d !== 0) {
+    return getScaleSkew('skewX', c / a);
+  }
+  if (roundedMatrix.data[2] === 0 && a !== 0 && b !== 0 && d !== 0) {
+    return getScaleSkew('skewY', b / d);
+  }
+  return [];
 }
 
 /**

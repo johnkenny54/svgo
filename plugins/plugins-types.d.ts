@@ -141,6 +141,7 @@ type DefaultPlugins = {
   minifyTransforms: {
     floatPrecision?: number;
     matrixPrecision?: number;
+    translatePrecision?: number;
     round09?: number;
     roundToZero?: number;
   };

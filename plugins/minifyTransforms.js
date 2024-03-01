@@ -9,7 +9,7 @@ import { removeLeadingZero, toFixed } from '../lib/svgo/tools.js';
 
 /**
  * @typedef {{ name: string, data: number[] }} TransformItem
- * @typedef {{floatPrecision?:number,matrixPrecision?:number,round09?:number,roundToZero?:number}} MinifyParams
+ * @typedef {{floatPrecision:number,matrixPrecision:number,translatePrecision:number,round09?:number,roundToZero?:number}} MinifyParams
  * @typedef {{re0?:RegExp,re9?:RegExp,round09Min:number,roundToZero:number}} RoundingInfo
  */
 
@@ -22,12 +22,14 @@ export const description = 'Make transform expressions as short as possible';
  * @type {import('./plugins-types.js').Plugin<'minifyTransforms'>}
  */
 export const fn = (root, params) => {
-  const calculatedParams = { ...params };
-  if (calculatedParams.floatPrecision === undefined) {
-    calculatedParams.matrixPrecision = undefined;
-  } else if (calculatedParams.matrixPrecision === undefined) {
-    calculatedParams.matrixPrecision = calculatedParams.floatPrecision + 2;
-  }
+  const calculatedParams = {};
+  calculatedParams.floatPrecision = params.floatPrecision ?? 0;
+  calculatedParams.matrixPrecision =
+    params.matrixPrecision ??
+    (calculatedParams.floatPrecision ? calculatedParams.floatPrecision + 2 : 0);
+  calculatedParams.translatePrecision =
+    params.translatePrecision ??
+    (calculatedParams.floatPrecision ? calculatedParams.floatPrecision - 1 : 0);
   if (calculatedParams.round09 === undefined) {
     calculatedParams.round09 = 6;
   }
@@ -76,8 +78,7 @@ function minifyTransforms(transforms, params, rInfo) {
   const floatPrecision = params.floatPrecision;
   const matrixPrecision = params.matrixPrecision;
 
-  const shouldRound =
-    floatPrecision !== undefined && matrixPrecision !== undefined;
+  const shouldRound = floatPrecision !== 0 && matrixPrecision !== 0;
 
   const roundedOriginal = roundExtremeValues(parsedOriginal, rInfo);
 
@@ -87,11 +88,7 @@ function minifyTransforms(transforms, params, rInfo) {
   if (shouldRound) {
     // Find the target matrix to compare against.
     const targetMatrixExact = transformsMultiply(losslessOriginal);
-    const targetMatrixRounded = roundTransform(
-      targetMatrixExact,
-      floatPrecision,
-      matrixPrecision,
-    );
+    const targetMatrixRounded = roundTransform(targetMatrixExact, params);
     const originalHasMatrix = losslessOriginal.some((t) => t.name === 'matrix');
 
     if (originalHasMatrix || losslessOriginal.length > 1) {
@@ -99,8 +96,7 @@ function minifyTransforms(transforms, params, rInfo) {
       const decomposed = decompose(
         targetMatrixExact,
         targetMatrixRounded,
-        floatPrecision,
-        matrixPrecision,
+        params,
       );
       candidates.push(...decomposed.map((t) => normalize(t)));
       // Add the rounded matrix itself as a candidate.
@@ -112,8 +108,7 @@ function minifyTransforms(transforms, params, rInfo) {
       const rounded = roundToMatrix(
         losslessOriginal,
         targetMatrixRounded,
-        floatPrecision,
-        matrixPrecision,
+        params,
       );
       if (rounded) {
         candidates.push(normalize(rounded));

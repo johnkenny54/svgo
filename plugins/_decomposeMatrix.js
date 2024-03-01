@@ -3,22 +3,16 @@ import { mergeTranslateAndRotate, transformsMultiply } from './_transforms.js';
 
 /**
  * @typedef {{ name: string, data: number[] }} TransformItem
- * @typedef {{floatPrecision?:number,matrixPrecision?:number,round09?:number|false}} MinifyParams
+ * @typedef {{floatPrecision:number,matrixPrecision:number,translatePrecision:number,round09?:number|false}} MinifyParams
  */
 
 /**
  * @param {TransformItem} originalMatrix
  * @param {TransformItem} roundedMatrix
- * @param {number} floatPrecision
- * @param {number} matrixPrecision
+ * @param {MinifyParams} params
  * @returns {TransformItem[][]}
  */
-export const decompose = (
-  originalMatrix,
-  roundedMatrix,
-  floatPrecision,
-  matrixPrecision,
-) => {
+export const decompose = (originalMatrix, roundedMatrix, params) => {
   const e = originalMatrix.data[4];
   const f = originalMatrix.data[5];
 
@@ -33,13 +27,7 @@ export const decompose = (
   ];
 
   for (const fn of decompositionFunctions) {
-    const decompositions = fn(
-      translate,
-      originalMatrix,
-      roundedMatrix,
-      floatPrecision,
-      matrixPrecision,
-    );
+    const decompositions = fn(translate, originalMatrix, roundedMatrix, params);
     if (decompositions.length) {
       return decompositions;
     }
@@ -72,29 +60,16 @@ export const getNumberOfDecimalDigits = (n) => {
 /**
  * @param {TransformItem[]} transforms
  * @param {TransformItem} targetMatrix
- * @param {number} floatPrecision
- * @param {number} matrixPrecision
+ * @param {MinifyParams} params
  */
-export const roundToMatrix = (
-  transforms,
-  targetMatrix,
-  floatPrecision,
-  matrixPrecision,
-) => {
+export const roundToMatrix = (transforms, targetMatrix, params) => {
   /** @type {TransformItem[]} */
   const rounded = [];
   for (const transform of transforms) {
-    rounded.push(roundTransform(transform, floatPrecision, matrixPrecision));
+    rounded.push(roundTransform(transform, params));
   }
   let count = 0;
-  while (
-    !roundedMatchesTarget(
-      rounded,
-      targetMatrix,
-      floatPrecision,
-      matrixPrecision,
-    )
-  ) {
+  while (!roundedMatchesTarget(rounded, targetMatrix, params)) {
     if (!addADigitToAllTransforms(rounded, transforms)) {
       // Can't increase the number of digits, and we still haven't hit the target matrix.
       return;
@@ -108,12 +83,7 @@ export const roundToMatrix = (
   // See if we can decrease rounding for anything and still hit the target.
   let canDecrease = true;
   do {
-    canDecrease = removeADigitFromAllTransforms(
-      rounded,
-      targetMatrix,
-      floatPrecision,
-      matrixPrecision,
-    );
+    canDecrease = removeADigitFromAllTransforms(rounded, targetMatrix, params);
   } while (canDecrease);
 
   return rounded;
@@ -121,29 +91,36 @@ export const roundToMatrix = (
 
 /**
  * @param {TransformItem} transform
- * @param {number} floatPrecision
- * @param {number} matrixPrecision
+ * @param {MinifyParams} params
  */
-export const roundTransform = (transform, floatPrecision, matrixPrecision) => {
+export const roundTransform = (transform, params) => {
   switch (transform.name) {
     case 'matrix':
       // Use matrixPrecision on first 4 entries - they tend to be small and multiplied frequently.
       return {
         name: transform.name,
         data: transform.data.map((n, index) =>
-          toFixed(n, index < 4 ? matrixPrecision : floatPrecision),
+          toFixed(
+            n,
+            index < 4 ? params.matrixPrecision : params.translatePrecision,
+          ),
         ),
       };
     case 'scale':
       // Use matrixPrecision since scale is multiplied.
       return {
         name: transform.name,
-        data: transform.data.map((n) => toFixed(n, matrixPrecision)),
+        data: transform.data.map((n) => toFixed(n, params.matrixPrecision)),
+      };
+    case 'translate':
+      return {
+        name: transform.name,
+        data: transform.data.map((n) => toFixed(n, params.translatePrecision)),
       };
     default:
       return {
         name: transform.name,
-        data: transform.data.map((n) => toFixed(n, floatPrecision)),
+        data: transform.data.map((n) => toFixed(n, params.floatPrecision)),
       };
   }
 };
@@ -207,18 +184,19 @@ function addADigitToOneTransform(rounded, original) {
  * @param {TransformItem|undefined} translate
  * @param {TransformItem} originalMatrix
  * @param {TransformItem} roundedMatrix
- * @param {number} floatPrecision
- * @param {number} matrixPrecision
+ * @param {MinifyParams} params
  * @returns {TransformItem[][]}
  */
 function decomposeRotateScale(
   translate,
   originalMatrix,
   roundedMatrix,
-  floatPrecision,
-  matrixPrecision,
+  params,
 ) {
-  const rotateScale = getRotateScale(originalMatrix.data, floatPrecision);
+  const rotateScale = getRotateScale(
+    originalMatrix.data,
+    params.floatPrecision,
+  );
   if (!rotateScale) {
     return [];
   }
@@ -229,36 +207,24 @@ function decomposeRotateScale(
   }
   result.push(...rotateScale);
 
-  return roundAndFindVariants(
-    result,
-    roundedMatrix,
-    floatPrecision,
-    matrixPrecision,
-  );
+  return roundAndFindVariants(result, roundedMatrix, params);
 }
 
 /**
  * @param {TransformItem|undefined} translate
  * @param {TransformItem} originalMatrix
  * @param {TransformItem} roundedMatrix
- * @param {number} floatPrecision
- * @param {number} matrixPrecision
+ * @param {MinifyParams} params
  * @returns {TransformItem[][]}
  */
-function decomposeRotateSkew(
-  translate,
-  originalMatrix,
-  roundedMatrix,
-  floatPrecision,
-  matrixPrecision,
-) {
+function decomposeRotateSkew(translate, originalMatrix, roundedMatrix, params) {
   /**
    * @param {string} name
    * @param {number} tanA
    * @param {number} tanB
    */
   function getSkew(name, tanA, tanB) {
-    if (toFixed(tanA - tanB, floatPrecision) === 0) {
+    if (toFixed(tanA - tanB, params.floatPrecision) === 0) {
       const atanA = Math.atan(tanA);
       const atanB = Math.atan(tanB);
       const skewDegrees = ((atanA + atanB) * 90) / Math.PI;
@@ -276,14 +242,14 @@ function decomposeRotateSkew(
     const tanB = (d - a) / b;
     skew = getSkew('skewX', tanA, tanB);
     // The remaining matrix is a rotate matrix with possibly a small scale adjustment, include the scale for precision.
-    rotateScale = getRotateScale([a, b, -b, a], floatPrecision);
+    rotateScale = getRotateScale([a, b, -b, a], params.floatPrecision);
   }
   if (!skew && c !== 0 && d !== 0) {
     // Look for skewY.
     const tanA = (b + c) / d;
     const tanB = (a - d) / c;
     skew = getSkew('skewY', tanA, tanB);
-    rotateScale = getRotateScale([d, -c, c, d], floatPrecision);
+    rotateScale = getRotateScale([d, -c, c, d], params.floatPrecision);
   }
 
   if (!skew || !rotateScale) {
@@ -298,28 +264,21 @@ function decomposeRotateSkew(
 
   result.push(skew);
 
-  return roundAndFindVariants(
-    result,
-    roundedMatrix,
-    floatPrecision,
-    matrixPrecision,
-  );
+  return roundAndFindVariants(result, roundedMatrix, params);
 }
 
 /**
  * @param {TransformItem|undefined} translate
  * @param {TransformItem} originalMatrix
  * @param {TransformItem} roundedMatrix
- * @param {number} floatPrecision
- * @param {number} matrixPrecision
+ * @param {MinifyParams} params
  * @returns {TransformItem[][]}
  */
 function decomposeScaleRotate(
   translate,
   originalMatrix,
   roundedMatrix,
-  floatPrecision,
-  matrixPrecision,
+  params,
 ) {
   let [a, b, c, d] = originalMatrix.data;
 
@@ -332,13 +291,13 @@ function decomposeScaleRotate(
   let sin = b / sy;
   const cos2 = d / sy;
 
-  if (toFixed(cos + cos2, floatPrecision) === 0) {
+  if (toFixed(cos + cos2, params.floatPrecision) === 0) {
     // Scales have opposite signs so the calculated cosines are opposites. Invert sx and invert the cosine.
     sx = -sx;
     cos = -cos;
   }
 
-  const degrees = findRotation(cos, sin, cos2, floatPrecision);
+  const degrees = findRotation(cos, sin, cos2, params.floatPrecision);
   if (degrees === undefined) {
     return [];
   }
@@ -350,12 +309,7 @@ function decomposeScaleRotate(
 
   result.push({ name: 'scale', data: [sx, sy] });
   result.push({ name: 'rotate', data: [degrees, 0, 0] });
-  const rounded = roundToMatrix(
-    result,
-    roundedMatrix,
-    floatPrecision,
-    matrixPrecision,
-  );
+  const rounded = roundToMatrix(result, roundedMatrix, params);
 
   return rounded ? [rounded] : [];
 }
@@ -364,17 +318,10 @@ function decomposeScaleRotate(
  * @param {TransformItem|undefined} translate
  * @param {TransformItem} originalMatrix
  * @param {TransformItem} roundedMatrix
- * @param {number} floatPrecision
- * @param {number} matrixPrecision
+ * @param {MinifyParams} params
  * @returns {TransformItem[][]}
  */
-function decomposeScaleSkew(
-  translate,
-  originalMatrix,
-  roundedMatrix,
-  floatPrecision,
-  matrixPrecision,
-) {
+function decomposeScaleSkew(translate, originalMatrix, roundedMatrix, params) {
   /**
    * @param {string} name
    * @param {number} tan
@@ -382,12 +329,7 @@ function decomposeScaleSkew(
   function getScaleSkew(name, tan) {
     const scale = { name: 'scale', data: [a, d] };
     const skew = { name: name, data: [(Math.atan(tan) * 180) / Math.PI] };
-    const result = roundToMatrix(
-      [scale, skew],
-      roundedMatrix,
-      floatPrecision,
-      matrixPrecision,
-    );
+    const result = roundToMatrix([scale, skew], roundedMatrix, params);
     if (!result) {
       return [];
     }
@@ -492,15 +434,9 @@ function matrixDataIsEqual(m1, m2) {
 /**
  * @param {TransformItem[]} rounded
  * @param {TransformItem} targetMatrix
- * @param {number} floatPrecision
- * @param {number} matrixPrecision
+ * @param {MinifyParams} params
  */
-function removeADigitFromAllTransforms(
-  rounded,
-  targetMatrix,
-  floatPrecision,
-  matrixPrecision,
-) {
+function removeADigitFromAllTransforms(rounded, targetMatrix, params) {
   let changed = false;
   for (let index = 0; index < rounded.length; index++) {
     const origTransform = rounded[index];
@@ -512,14 +448,7 @@ function removeADigitFromAllTransforms(
         const trialValue = decreasedTransform.data[index];
         if (origValue !== trialValue) {
           origTransform.data[index] = trialValue;
-          if (
-            roundedMatchesTarget(
-              rounded,
-              targetMatrix,
-              floatPrecision,
-              matrixPrecision,
-            )
-          ) {
+          if (roundedMatchesTarget(rounded, targetMatrix, params)) {
             changed = true;
           } else {
             // Restore the original value.
@@ -553,24 +482,13 @@ function removeADigitFromOneTransform(t) {
  *
  * @param {TransformItem[]} result
  * @param {TransformItem} targetMatrix
- * @param {number} floatPrecision
- * @param {number} matrixPrecision
+ * @param {MinifyParams} params
  * @returns {TransformItem[][]}
  */
-function roundAndFindVariants(
-  result,
-  targetMatrix,
-  floatPrecision,
-  matrixPrecision,
-) {
+function roundAndFindVariants(result, targetMatrix, params) {
   const allResults = [];
 
-  const rounded = roundToMatrix(
-    result,
-    targetMatrix,
-    floatPrecision,
-    matrixPrecision,
-  );
+  const rounded = roundToMatrix(result, targetMatrix, params);
 
   if (rounded) {
     allResults.push(rounded);
@@ -590,12 +508,7 @@ function roundAndFindVariants(
     );
     if (merged) {
       const mergedResult = [merged, ...result.slice(2)];
-      const rounded = roundToMatrix(
-        mergedResult,
-        targetMatrix,
-        floatPrecision,
-        matrixPrecision,
-      );
+      const rounded = roundToMatrix(mergedResult, targetMatrix, params);
       if (rounded) {
         allResults.push(rounded);
       }
@@ -608,20 +521,10 @@ function roundAndFindVariants(
 /**
  * @param {TransformItem[]} rounded
  * @param {TransformItem} targetMatrix
- * @param {number} floatPrecision
- * @param {number} matrixPrecision
+ * @param {MinifyParams} params
  */
-function roundedMatchesTarget(
-  rounded,
-  targetMatrix,
-  floatPrecision,
-  matrixPrecision,
-) {
-  const multiplied = roundTransform(
-    transformsMultiply(rounded),
-    floatPrecision,
-    matrixPrecision,
-  );
+function roundedMatchesTarget(rounded, targetMatrix, params) {
+  const multiplied = roundTransform(transformsMultiply(rounded), params);
 
   return matrixDataIsEqual(multiplied.data, targetMatrix.data);
 }

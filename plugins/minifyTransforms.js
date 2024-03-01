@@ -9,7 +9,8 @@ import { removeLeadingZero, toFixed } from '../lib/svgo/tools.js';
 
 /**
  * @typedef {{ name: string, data: number[] }} TransformItem
- * @typedef {{floatPrecision?:number,matrixPrecision?:number,round09?:number|false}} MinifyParams
+ * @typedef {{floatPrecision?:number,matrixPrecision?:number,round09?:number,roundToZero?:number}} MinifyParams
+ * @typedef {{re0?:RegExp,re9?:RegExp,round09Min:number,roundToZero:number}} RoundingInfo
  */
 
 export const name = 'minifyTransforms';
@@ -30,6 +31,10 @@ export const fn = (root, params) => {
   if (calculatedParams.round09 === undefined) {
     calculatedParams.round09 = 7;
   }
+  if (calculatedParams.roundToZero === undefined) {
+    calculatedParams.roundToZero = 1e-7;
+  }
+  const roundingInfo = getRoundingInfo(calculatedParams);
 
   return {
     element: {
@@ -40,7 +45,11 @@ export const fn = (root, params) => {
           if (input === undefined) {
             return;
           }
-          const output = minifyTransforms(input, calculatedParams);
+          const output = minifyTransforms(
+            input,
+            calculatedParams,
+            roundingInfo,
+          );
           if (output) {
             node.attributes[attName] = output;
           } else {
@@ -58,9 +67,10 @@ export const fn = (root, params) => {
 /**
  * @param {string} transforms
  * @param {MinifyParams} params
+ * @param {RoundingInfo} rInfo
  * @returns {string}
  */
-function minifyTransforms(transforms, params) {
+function minifyTransforms(transforms, params, rInfo) {
   const parsedOriginal = transform2js(transforms);
 
   const floatPrecision = params.floatPrecision;
@@ -69,7 +79,7 @@ function minifyTransforms(transforms, params) {
   const shouldRound =
     floatPrecision !== undefined && matrixPrecision !== undefined;
 
-  const roundedOriginal = roundExtremeValues(parsedOriginal, params);
+  const roundedOriginal = roundExtremeValues(parsedOriginal, rInfo);
 
   const losslessOriginal = normalize(roundedOriginal);
   const candidates = [losslessOriginal];
@@ -547,24 +557,14 @@ function minifyNumber(n) {
 
 /**
  * @param {TransformItem[]} transforms
- * @param {MinifyParams} params
+ * @param {RoundingInfo} rInfo
  */
-function roundExtremeValues(transforms, params) {
-  /**
-   * @param {number} n
-   */
-  function roundValue(n) {
-    if (params.round09) {
-      return round09(n, params.round09);
-    }
-    return n;
-  }
-
+function roundExtremeValues(transforms, rInfo) {
   const rounded = [];
   for (const transform of transforms) {
     rounded.push({
       name: transform.name,
-      data: transform.data.map((n) => roundValue(n)),
+      data: transform.data.map((n) => round09(n, rInfo)),
     });
   }
   return rounded;
@@ -573,44 +573,53 @@ function roundExtremeValues(transforms, params) {
 /**
  * Round numbers with consective 0s or 9s.
  * @param {number} n
- * @param {number} minCount number of consecutive 0s or 99s that trigger rounding.
+ * @param {RoundingInfo} rInfo
  * @returns {number}
  */
-export function round09(n, minCount) {
-  /** @param {string} str */
-  function roundExponential(str) {
-    const parts = str.split('e');
-    const exp = parseInt(parts[1]);
-    if (exp >= 0) {
-      return n;
+export function round09(n, rInfo) {
+  /**
+   * @param {string} str
+   * @param {RegExp|undefined} re
+   */
+  function checkPattern(str, re) {
+    if (re) {
+      const m = str.match(re);
+      if (m) {
+        return toFixed(n, m[1].length);
+      }
     }
-    return -exp > minCount ? 0 : n;
   }
 
-  /**
-   * @param {RegExp} re
-   */
-  function checkPattern(re) {
-    const m = str.match(re);
-    if (m) {
-      return toFixed(n, m[1].length);
+  if (rInfo.roundToZero && n < rInfo.roundToZero && n > -rInfo.roundToZero) {
+    return 0;
+  }
+  if (rInfo.round09Min && (n >= rInfo.round09Min || n <= -rInfo.round09Min)) {
+    const str = n.toString();
+    const p9 = checkPattern(str, rInfo.re9);
+    if (p9 !== undefined) {
+      return p9;
+    }
+    const p0 = checkPattern(str, rInfo.re0);
+    if (p0 !== undefined) {
+      return p0;
     }
   }
-  const str = n.toString();
-  if (str.includes('e')) {
-    return roundExponential(str);
-  }
-  const re9 = new RegExp(`.*\\.(\\d*)9{${minCount},}`);
-  const p9 = checkPattern(re9);
-  if (p9 !== undefined) {
-    return p9;
-  }
-  const re0 = new RegExp(`.*\\.(\\d*)0{${minCount},}`);
-  const p0 = checkPattern(re0);
-  if (p0 !== undefined) {
-    return p0;
-  }
   return n;
+}
+
+/**
+ * @param {MinifyParams} params
+ * @returns {RoundingInfo}
+ */
+export function getRoundingInfo(params) {
+  const info = {};
+  info.roundToZero = params.roundToZero ?? 0;
+  if (params.round09) {
+    info.re0 = new RegExp(`.*\\.(\\d*)0{${params.round09},}`);
+    info.re9 = new RegExp(`.*\\.(\\d*)9{${params.round09},}`);
+    info.round09Min = Math.pow(10, -params.round09);
+  }
+  return info;
 }
 
 /**

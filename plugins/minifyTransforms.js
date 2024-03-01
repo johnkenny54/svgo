@@ -174,7 +174,10 @@ function normalize(transforms) {
           case 'rotate':
             // If the next one is a scale, use the shortest of the current sequence and
             // rotate (a+180)scale(-sx,-sy).
-            if (next.name === 'scale') {
+            if (
+              (t.data.length === 1 || (t.data[1] === 0 && t.data[2] === 0)) &&
+              next.name === 'scale'
+            ) {
               const current = [t, next];
               const rs = getNewScaleAndRotate(t, next);
               if (!rs.scale) {
@@ -191,7 +194,11 @@ function normalize(transforms) {
           case 'scale':
             // If the next one is a rotate, use the shortest of the current sequence and
             // scale(-sx,-sy)rotate (a+180).
-            if (next.name === 'rotate') {
+            if (
+              next.name === 'rotate' &&
+              (next.data.length === 1 ||
+                (next.data[1] === 0 && next.data[2] === 0))
+            ) {
               const current = [t, next];
               const rs = getNewScaleAndRotate(next, t);
               if (!rs.scale) {

@@ -1,0 +1,29 @@
+Don't decompose transforms in a <linearGradient>.
+
+===
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120">
+    <defs>
+        <linearGradient id="a" gradientTransform="matrix(0.87462 0.48481 -0.48481 0.87462 0 0)">
+            <stop offset="5%" stop-color="gold" />
+            <stop offset="95%" stop-color="red" />
+        </linearGradient>
+    </defs>
+    <rect x="10" y="20" fill="url(#a)" width="64" height="64" transform="matrix(0.87462 0.48481 -0.48481 0.87462 0 0)"/>
+</svg>
+
+@@@
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120">
+    <defs>
+        <linearGradient id="a" gradientTransform="matrix(.87462 .48481 -.48481 .87462 0 0)">
+            <stop offset="5%" stop-color="gold"/>
+            <stop offset="95%" stop-color="red"/>
+        </linearGradient>
+    </defs>
+    <rect x="10" y="20" fill="url(#a)" width="64" height="64" transform="rotate(29)"/>
+</svg>
+
+@@@
+
+{"floatPrecision":3}

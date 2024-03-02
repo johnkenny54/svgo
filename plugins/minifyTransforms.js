@@ -16,6 +16,13 @@ import { removeLeadingZero, toFixed } from '../lib/svgo/tools.js';
 export const name = 'minifyTransforms';
 export const description = 'Make transform expressions as short as possible';
 
+const gradientElements = new Set([
+  'linearGradient',
+  'pattern',
+  'radialGradient',
+]);
+const textElements = new Set(['text']);
+
 /**
  * Make transform expressions as short as possible.
  *
@@ -26,7 +33,7 @@ export const fn = (root, params) => {
   calculatedParams.floatPrecision = params.floatPrecision ?? 0;
   calculatedParams.matrixPrecision =
     params.matrixPrecision ??
-    (calculatedParams.floatPrecision ? calculatedParams.floatPrecision + 2 : 0);
+    (calculatedParams.floatPrecision ? calculatedParams.floatPrecision + 1 : 0);
   calculatedParams.translatePrecision =
     params.translatePrecision ??
     (calculatedParams.floatPrecision ? calculatedParams.floatPrecision : 0);
@@ -34,6 +41,14 @@ export const fn = (root, params) => {
   calculatedParams.roundToZero = params.roundToZero ?? 1e-7;
 
   const roundingInfo = getRoundingInfo(calculatedParams);
+
+  const gradientParams = {
+    floatPrecision: 0,
+    matrixPrecision: 0,
+    translatePrecision: 0,
+  };
+  let isInGradient = 0;
+  let isInText = 0;
 
   return {
     element: {
@@ -46,7 +61,7 @@ export const fn = (root, params) => {
           }
           const output = minifyTransforms(
             input,
-            calculatedParams,
+            isInText || isInGradient ? gradientParams : calculatedParams,
             roundingInfo,
           );
           if (output) {
@@ -55,9 +70,23 @@ export const fn = (root, params) => {
             delete node.attributes[attName];
           }
         }
+
+        if (gradientElements.has(node.name)) {
+          isInGradient++;
+        } else if (textElements.has(node.name)) {
+          isInText++;
+        }
+
         ['transform', 'gradientTransform', 'patternTransform'].forEach(
           (attName) => processAttribute(attName),
         );
+      },
+      exit: (node) => {
+        if (gradientElements.has(node.name)) {
+          isInGradient--;
+        } else if (textElements.has(node.name)) {
+          isInText--;
+        }
       },
     },
   };

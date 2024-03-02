@@ -329,12 +329,14 @@ function decomposeScaleSkew(translate, originalMatrix, roundedMatrix, params) {
   function getScaleSkew(name, tan) {
     const scale = { name: 'scale', data: [a, d] };
     const skew = { name: name, data: [(Math.atan(tan) * 180) / Math.PI] };
-    const result = roundToMatrix([scale, skew], roundedMatrix, params);
-    if (!result) {
-      return [];
+    const result = [];
+    if (translate) {
+      result.push(translate);
     }
-    return [result];
+    result.push(scale, skew);
+    return roundAndFindVariants(result, roundedMatrix, params);
   }
+
   let [a, b, c, d] = originalMatrix.data;
   if (roundedMatrix.data[1] === 0 && a !== 0 && c !== 0 && d !== 0) {
     return getScaleSkew('skewX', c / a);

@@ -63,14 +63,12 @@ for (const testCase of TEST_CASES) {
   const inputStr = testCase[0];
   test(inputStr, () => {
     const input = transform2js(inputStr);
-    const floatPrecision = testCase[3] ?? 3;
-    const matrixPrecision = testCase[4] ?? 5;
-    const result = roundToMatrix(
-      input,
-      transform2js(testCase[1])[0],
-      floatPrecision,
-      matrixPrecision,
-    );
+    const params = {
+      floatPrecision: testCase[3] ?? 3,
+      matrixPrecision: testCase[4] ?? 5,
+      translatePrecision: testCase[3] ?? 3,
+    };
+    const result = roundToMatrix(input, transform2js(testCase[1])[0], params);
     expect(result ? jsToString(result) : result).toBe(testCase[2]);
   });
 }

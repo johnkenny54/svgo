@@ -29,13 +29,10 @@ export const fn = (root, params) => {
     (calculatedParams.floatPrecision ? calculatedParams.floatPrecision + 2 : 0);
   calculatedParams.translatePrecision =
     params.translatePrecision ??
-    (calculatedParams.floatPrecision ? calculatedParams.floatPrecision - 1 : 0);
-  if (calculatedParams.round09 === undefined) {
-    calculatedParams.round09 = 6;
-  }
-  if (calculatedParams.roundToZero === undefined) {
-    calculatedParams.roundToZero = 1e-7;
-  }
+    (calculatedParams.floatPrecision ? calculatedParams.floatPrecision : 0);
+  calculatedParams.round09 = params.round09 ?? 6;
+  calculatedParams.roundToZero = params.roundToZero ?? 1e-7;
+
   const roundingInfo = getRoundingInfo(calculatedParams);
 
   return {

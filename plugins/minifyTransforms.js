@@ -16,12 +16,7 @@ import { removeLeadingZero, toFixed } from '../lib/svgo/tools.js';
 export const name = 'minifyTransforms';
 export const description = 'Make transform expressions as short as possible';
 
-const gradientElements = new Set([
-  'linearGradient',
-  'pattern',
-  'radialGradient',
-]);
-const textElements = new Set(['text']);
+const sensitiveElements = new Set(['g']);
 
 /**
  * Make transform expressions as short as possible.
@@ -33,10 +28,10 @@ export const fn = (root, params) => {
   calculatedParams.floatPrecision = params.floatPrecision ?? 0;
   calculatedParams.matrixPrecision =
     params.matrixPrecision ??
-    (calculatedParams.floatPrecision ? calculatedParams.floatPrecision + 1 : 0);
+    (calculatedParams.floatPrecision ? calculatedParams.floatPrecision + 2 : 0);
   calculatedParams.translatePrecision =
     params.translatePrecision ??
-    (calculatedParams.floatPrecision ? calculatedParams.floatPrecision : 0);
+    (calculatedParams.floatPrecision ? calculatedParams.floatPrecision - 1 : 0);
   calculatedParams.round09 = params.round09 ?? 6;
   calculatedParams.roundToZero = params.roundToZero ?? 1e-7;
 
@@ -47,8 +42,7 @@ export const fn = (root, params) => {
     matrixPrecision: 0,
     translatePrecision: 0,
   };
-  let isInGradient = 0;
-  let isInText = 0;
+  let isInSensitiveElement = 0;
 
   return {
     element: {
@@ -61,7 +55,7 @@ export const fn = (root, params) => {
           }
           const output = minifyTransforms(
             input,
-            isInText || isInGradient ? gradientParams : calculatedParams,
+            isInSensitiveElement ? gradientParams : calculatedParams,
             roundingInfo,
           );
           if (output) {
@@ -71,10 +65,8 @@ export const fn = (root, params) => {
           }
         }
 
-        if (gradientElements.has(node.name)) {
-          isInGradient++;
-        } else if (textElements.has(node.name)) {
-          isInText++;
+        if (sensitiveElements.has(node.name)) {
+          isInSensitiveElement++;
         }
 
         ['transform', 'gradientTransform', 'patternTransform'].forEach(
@@ -82,10 +74,8 @@ export const fn = (root, params) => {
         );
       },
       exit: (node) => {
-        if (gradientElements.has(node.name)) {
-          isInGradient--;
-        } else if (textElements.has(node.name)) {
-          isInText--;
+        if (sensitiveElements.has(node.name)) {
+          isInSensitiveElement--;
         }
       },
     },

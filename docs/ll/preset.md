@@ -11,5 +11,11 @@
 
 - **convertShapeToPath**
 - **convertTransform** rounds coordinates.
+
+  Related issues:
+
+  - https://github.com/svg/svgo/issues/1858
+  - https://github.com/svg/svgo/issues/1810
+
 - **mergePaths** rounds coordinates.
 - **moveGroupAttrsToElems**

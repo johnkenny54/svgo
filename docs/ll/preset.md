@@ -3,13 +3,13 @@
 **preset-default.js** enables several plugins which don't guarantee lossless compression. These have been disabled.
 
 - **cleanupNumericValues** rounds coordinates.
-- **convertPathData**
+- **convertPathData** rounds coordinates.
 
   Related issues:
 
   - https://github.com/svg/svgo/issues/1676
 
-- **convertShapeToPath**
+- **convertShapeToPath** rounds coordinates.
 - **convertTransform** rounds coordinates.
 
   Related issues:

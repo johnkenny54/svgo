@@ -55,7 +55,7 @@ const runTests = async (list) => {
       height,
     );
     // ignore small aliasing issues
-    if (matched <= 4) {
+    if (matched === 0) {
       passed++;
     } else {
       mismatched++;

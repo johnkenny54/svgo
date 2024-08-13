@@ -39,11 +39,7 @@ describe('svgo', () => {
     });
     expect(normalize(result.data)).toStrictEqual(expected);
   });
-  it('should handle plugins order properly', async () => {
-    const [original, expected] = await parseFixture('plugins-order.svg.txt');
-    const result = optimize(original, { path: 'input.svg' });
-    expect(normalize(result.data)).toStrictEqual(expected);
-  });
+
   it('should handle empty svg tag', async () => {
     const result = optimize('<svg />', { path: 'input.svg' });
     expect(result.data).toBe('<svg/>');

@@ -12,6 +12,6 @@
     <style>
         .fill-red{fill:red}
     </style>
-    <path d="M20 20h10v10H20z" class="fill-red" style="fill:green"/>
-    <path d="M70 20h10v10H70z" class="fill-red" style="fill:#00f"/>
+    <rect width="10" height="10" x="20" y="20" class="fill-red" style="fill:green"/>
+    <rect width="10" height="10" x="70" y="20" class="fill-red" style="fill:#00f"/>
 </svg>

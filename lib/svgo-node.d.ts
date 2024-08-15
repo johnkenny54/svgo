@@ -1,6 +1,6 @@
 import { Config } from './svgo';
 
-export * from './svgo';
+export * from './svgo.ts';
 
 /**
  * If you write a tool on top of svgo you might need a way to load svgo config.

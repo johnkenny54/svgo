@@ -4195,9 +4195,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sax@patch:sax@npm%3A1.4.1#./.yarn/patches/sax-npm-1.4.1-503b1923cb.patch::locator=svgo%40workspace%3A.":
+"sax@patch:sax@npm%3A1.4.1#./.yarn/patches/sax-npm-1.4.1-503b1923cb.patch::locator=svgo-ll%40workspace%3A.":
   version: 1.4.1
-  resolution: "sax@patch:sax@npm%3A1.4.1#./.yarn/patches/sax-npm-1.4.1-503b1923cb.patch::version=1.4.1&hash=ad106d&locator=svgo%40workspace%3A."
+  resolution: "sax@patch:sax@npm%3A1.4.1#./.yarn/patches/sax-npm-1.4.1-503b1923cb.patch::version=1.4.1&hash=ad106d&locator=svgo-ll%40workspace%3A."
   checksum: 511be280ca9f1d474466aa165a7e6b50fc70e2de2f263462f60358a9f0661cf36c8f334234813e438d61676374e7aa551a6c81bcecb763e3d3914e2f627a8a51
   languageName: node
   linkType: hard
@@ -4493,9 +4493,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"svgo@workspace:.":
+"svgo-ll@workspace:.":
   version: 0.0.0-use.local
-  resolution: "svgo@workspace:."
+  resolution: "svgo-ll@workspace:."
   dependencies:
     "@eslint/js": ^9.3.0
     "@rollup/plugin-commonjs": ^25.0.7
@@ -4526,7 +4526,7 @@ __metadata:
     tar-stream: ^3.1.7
     typescript: ^5.4.5
   bin:
-    svgo: ./bin/svgo.js
+    svgo-ll: ./bin/svgo.js
   languageName: unknown
   linkType: soft
 

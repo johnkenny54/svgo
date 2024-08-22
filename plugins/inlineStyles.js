@@ -5,6 +5,7 @@ import {
   visitSkip,
   querySelectorAll,
   detachNodeFromParent,
+  matches,
 } from '../lib/xast.js';
 import { compareSpecificity, includesAttrSelector } from '../lib/style.js';
 
@@ -58,6 +59,8 @@ export const fn = (root, params) => {
    * }[]}
    */
   let selectors = [];
+  /** @type {string[]} */
+  const clientPseudoSelectors = [];
 
   return {
     element: {
@@ -124,7 +127,6 @@ export const fn = (root, params) => {
                    * }[]}
                    */
                   const pseudos = [];
-
                   childNode.children.forEach(
                     (grandchildNode, grandchildItem, grandchildList) => {
                       const isPseudo =
@@ -150,13 +152,44 @@ export const fn = (root, params) => {
                     ),
                   });
 
+                  let addToSelectors = true;
                   if (usePseudos.includes(pseudoSelectors)) {
                     for (const pseudo of pseudos) {
                       pseudo.list.remove(pseudo.item);
                     }
+                  } else if (pseudos.length > 0) {
+                    // The selector has pseudo classes that must be evaluated by the client. Don't inline the style.
+                    // Record the selector (without the pseudo classes), so we can ensure we don't inline styles for any element that
+                    // may be targeted by this selector.
+
+                    /**
+                     * @param {import('css-tree').Selector} node
+                     * @returns {import('css-tree').CssNode}
+                     */
+                    function cloneSelectorWithoutPseudos(node) {
+                      return {
+                        type: node.type,
+                        children: node.children
+                          .filter(
+                            (n) =>
+                              n.type !== 'PseudoClassSelector' ||
+                              preservedPseudos.includes(n.name),
+                          )
+                          .map(csstree.clone),
+                      };
+                    }
+
+                    addToSelectors = false;
+                    const selectorWithoutPseudos =
+                      cloneSelectorWithoutPseudos(childNode);
+                    clientPseudoSelectors.push(
+                      csstree.generate(selectorWithoutPseudos),
+                    );
                   }
 
-                  selectors.push({ node: childNode, rule: node, item: item });
+                  if (addToSelectors) {
+                    selectors.push({ node: childNode, rule: node, item: item });
+                  }
                 }
               });
             }
@@ -205,7 +238,18 @@ export const fn = (root, params) => {
           }
 
           // apply <style/> to matched elements
+          let skippedClientPseudoSelectors = false;
           for (const selectedEl of matchedElements) {
+            // Don't move styles to attribute if the element matches any selectors that have to be evaluated on the client.
+            if (
+              clientPseudoSelectors.some((selector) =>
+                matches(selectedEl, selector),
+              )
+            ) {
+              skippedClientPseudoSelectors = true;
+              continue;
+            }
+
             const styleDeclarationList = csstree.parse(
               selectedEl.attributes.style ?? '',
               {
@@ -280,7 +324,8 @@ export const fn = (root, params) => {
           if (
             removeMatchedSelectors &&
             matchedElements.length !== 0 &&
-            selector.rule.prelude.type === 'SelectorList'
+            selector.rule.prelude.type === 'SelectorList' &&
+            !skippedClientPseudoSelectors
           ) {
             // clean up matching simple selectors if option removeMatchedSelectors is enabled
             selector.rule.prelude.children.remove(selector.item);
@@ -332,23 +377,6 @@ export const fn = (root, params) => {
               delete selectedEl.attributes.class;
             } else {
               selectedEl.attributes.class = Array.from(classList).join(' ');
-            }
-
-            // ID
-            const firstSubSelector = selector.node.children.first;
-            if (
-              firstSubSelector?.type === 'IdSelector' &&
-              selectedEl.attributes.id === firstSubSelector.name &&
-              !selectors.some((selector) =>
-                includesAttrSelector(
-                  selector.item,
-                  'id',
-                  firstSubSelector.name,
-                  true,
-                ),
-              )
-            ) {
-              delete selectedEl.attributes.id;
             }
           }
         }

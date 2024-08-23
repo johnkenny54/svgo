@@ -237,6 +237,7 @@ export type BuiltinsWithOptionalParams = DefaultPlugins & {
   convertStyleToAttrs: {
     keepImportant?: boolean;
   };
+  minifyPathData: void;
   prefixIds: {
     prefix?:
       | boolean

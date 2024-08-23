@@ -33,6 +33,30 @@ const preservedPseudos = [
 ];
 
 /**
+ * @param {import('css-tree').CssNode} node
+ */
+function getProperties(node) {
+  const props = new Set();
+  csstree.walk(node, {
+    visit: 'Declaration',
+    enter(ruleDeclaration) {
+      props.add(ruleDeclaration.property.toLowerCase());
+    },
+  });
+  return props;
+}
+/**
+ * @param {import('css-tree').CssNode} node
+ */
+function isPseudo(node) {
+  return (
+    (node.type === 'PseudoClassSelector' ||
+      node.type === 'PseudoElementSelector') &&
+    !preservedPseudos.includes(node.name)
+  );
+}
+
+/**
  * Merges styles from style nodes into inline styles.
  *
  * @type {import('./plugins-types.js').Plugin<'inlineStyles'>}
@@ -59,7 +83,7 @@ export const fn = (root, params) => {
    * }[]}
    */
   let selectors = [];
-  /** @type {string[]} */
+  /** @type {{selectorStr:string,props:Set<string>}[]} */
   const clientPseudoSelectors = [];
 
   return {
@@ -129,14 +153,7 @@ export const fn = (root, params) => {
                   const pseudos = [];
                   childNode.children.forEach(
                     (grandchildNode, grandchildItem, grandchildList) => {
-                      const isPseudo =
-                        grandchildNode.type === 'PseudoClassSelector' ||
-                        grandchildNode.type === 'PseudoElementSelector';
-
-                      if (
-                        isPseudo &&
-                        !preservedPseudos.includes(grandchildNode.name)
-                      ) {
+                      if (isPseudo(grandchildNode)) {
                         pseudos.push({
                           item: grandchildItem,
                           list: grandchildList,
@@ -170,11 +187,7 @@ export const fn = (root, params) => {
                       return {
                         type: node.type,
                         children: node.children
-                          .filter(
-                            (n) =>
-                              n.type !== 'PseudoClassSelector' ||
-                              preservedPseudos.includes(n.name),
-                          )
+                          .filter((n) => !isPseudo(n))
                           .map(csstree.clone),
                       };
                     }
@@ -182,9 +195,10 @@ export const fn = (root, params) => {
                     addToSelectors = false;
                     const selectorWithoutPseudos =
                       cloneSelectorWithoutPseudos(childNode);
-                    clientPseudoSelectors.push(
-                      csstree.generate(selectorWithoutPseudos),
-                    );
+                    clientPseudoSelectors.push({
+                      selectorStr: csstree.generate(selectorWithoutPseudos),
+                      props: getProperties(node),
+                    });
                   }
 
                   if (addToSelectors) {
@@ -212,6 +226,8 @@ export const fn = (root, params) => {
           })
           .reverse();
 
+        const preservedClassNodes = new Set();
+
         for (const selector of sortedSelectors) {
           // match selectors
           const selectorText = csstree.generate(selector.item.data);
@@ -238,17 +254,18 @@ export const fn = (root, params) => {
           }
 
           // apply <style/> to matched elements
-          let skippedClientPseudoSelectors = false;
+          let movedAllProperties = true;
           for (const selectedEl of matchedElements) {
-            // Don't move styles to attribute if the element matches any selectors that have to be evaluated on the client.
-            if (
-              clientPseudoSelectors.some((selector) =>
-                matches(selectedEl, selector),
-              )
-            ) {
-              skippedClientPseudoSelectors = true;
-              continue;
-            }
+            // Don't move properties to attribute if the element matches any selectors that have to be evaluated on the client.
+            const matchedPseudos = clientPseudoSelectors.filter((data) =>
+              matches(selectedEl, data.selectorStr),
+            );
+            const skippedProperties = matchedPseudos.reduce((props, data) => {
+              data.props.forEach((p) => {
+                props.add(p);
+              });
+              return props;
+            }, new Set());
 
             const styleDeclarationList = csstree.parse(
               selectedEl.attributes.style ?? '',
@@ -283,7 +300,7 @@ export const fn = (root, params) => {
                 // no inline styles, external styles,                                    external styles used
                 // inline styles,    external styles same   priority as inline styles,   inline   styles used
                 // inline styles,    external styles higher priority than inline styles, external styles used
-                const property = ruleDeclaration.property;
+                const property = ruleDeclaration.property.toLowerCase();
 
                 if (
                   attrsGroups.presentation.has(property) &&
@@ -294,23 +311,27 @@ export const fn = (root, params) => {
                   delete selectedEl.attributes[property];
                 }
 
-                const matchedItem = styleDeclarationItems.get(property);
-                const ruleDeclarationItem =
-                  styleDeclarationList.children.createItem(ruleDeclaration);
-                if (matchedItem == null) {
-                  styleDeclarationList.children.insert(
-                    ruleDeclarationItem,
-                    firstListItem,
-                  );
-                } else if (
-                  matchedItem.data.important !== true &&
-                  ruleDeclaration.important === true
-                ) {
-                  styleDeclarationList.children.replace(
-                    matchedItem,
-                    ruleDeclarationItem,
-                  );
-                  styleDeclarationItems.set(property, ruleDeclarationItem);
+                if (!skippedProperties.has(property)) {
+                  const matchedItem = styleDeclarationItems.get(property);
+                  const ruleDeclarationItem =
+                    styleDeclarationList.children.createItem(ruleDeclaration);
+                  if (matchedItem == null) {
+                    styleDeclarationList.children.insert(
+                      ruleDeclarationItem,
+                      firstListItem,
+                    );
+                  } else if (
+                    matchedItem.data.important !== true &&
+                    ruleDeclaration.important === true
+                  ) {
+                    styleDeclarationList.children.replace(
+                      matchedItem,
+                      ruleDeclarationItem,
+                    );
+                    styleDeclarationItems.set(property, ruleDeclarationItem);
+                  }
+                } else {
+                  movedAllProperties = false;
                 }
               },
             });
@@ -319,13 +340,19 @@ export const fn = (root, params) => {
             if (newStyles.length !== 0) {
               selectedEl.attributes.style = newStyles;
             }
+
+            if (skippedProperties.size > 0) {
+              // There are related selectors which have pseudo-classes. Don't delete the class attribute from the element, in case it is needed to
+              // match the pseudo-classes.
+              preservedClassNodes.add(selectedEl);
+            }
           }
 
           if (
             removeMatchedSelectors &&
+            movedAllProperties &&
             matchedElements.length !== 0 &&
-            selector.rule.prelude.type === 'SelectorList' &&
-            !skippedClientPseudoSelectors
+            selector.rule.prelude.type === 'SelectorList'
           ) {
             // clean up matching simple selectors if option removeMatchedSelectors is enabled
             selector.rule.prelude.children.remove(selector.item);
@@ -350,6 +377,10 @@ export const fn = (root, params) => {
           }
 
           for (const selectedEl of selector.matchedElements) {
+            if (preservedClassNodes.has(selectedEl)) {
+              continue;
+            }
+
             // class
             const classList = new Set(
               selectedEl.attributes.class == null

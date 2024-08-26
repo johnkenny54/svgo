@@ -1,4 +1,4 @@
-import { js2path, path2js } from './_path.js';
+import { intersects, js2path, path2js } from './_path.js';
 
 export const name = 'combinePaths';
 export const description = 'combines multiple consecutive paths';
@@ -8,7 +8,7 @@ export const description = 'combines multiple consecutive paths';
  * @typedef {import('../lib/types.js').XastElement} XastElement
  * @typedef {{pathEl:XastElement,
  *  pathData?:PathDataItem[],
- *  attData?:Map<string,string>
+ *  merged?:true
  * }} PathElementInfo
  */
 
@@ -30,12 +30,13 @@ export const fn = () => {
             if (currentPath === undefined) {
               currentPath = { pathEl: child };
             } else {
-              if (isMergeable(currentPath, child)) {
-                mergePaths(currentPath, child);
+              const childPathInfo = { pathEl: child };
+              if (isMergeable(currentPath, childPathInfo)) {
+                mergePaths(currentPath, childPathInfo);
                 mergedNodes.add(child);
               } else {
                 writePathData(currentPath);
-                currentPath = { pathEl: child };
+                currentPath = childPathInfo;
               }
             }
           } else if (currentPath !== undefined) {
@@ -61,12 +62,23 @@ export const fn = () => {
 };
 
 /**
+ * @param {PathElementInfo} pathElInfo
+ */
+function getPathData(pathElInfo) {
+  if (!pathElInfo.pathData) {
+    pathElInfo.pathData = path2js(pathElInfo.pathEl);
+  }
+  return pathElInfo.pathData;
+}
+/**
  * @param {PathElementInfo} currentPathInfo
- * @param {XastElement} sibling
+ * @param {PathElementInfo} sibling
  */
 function isMergeable(currentPathInfo, sibling) {
   const pathAttributes = Object.entries(currentPathInfo.pathEl.attributes);
-  if (pathAttributes.length !== Object.entries(sibling.attributes).length) {
+  if (
+    pathAttributes.length !== Object.entries(sibling.pathEl.attributes).length
+  ) {
     return false;
   }
 
@@ -75,29 +87,33 @@ function isMergeable(currentPathInfo, sibling) {
     if (k === 'd') {
       continue;
     }
-    if (sibling.attributes[k] !== v) {
+    if (sibling.pathEl.attributes[k] !== v) {
       return false;
     }
   }
+
+  // Make sure paths don't intersect.
+  if (intersects(getPathData(currentPathInfo), getPathData(sibling))) {
+    return false;
+  }
+
   return true;
 }
 
 /**
  * @param {PathElementInfo} currentPathInfo
- * @param {XastElement} sibling
+ * @param {PathElementInfo} sibling
  */
 function mergePaths(currentPathInfo, sibling) {
-  if (!currentPathInfo.pathData) {
-    currentPathInfo.pathData = path2js(currentPathInfo.pathEl);
-  }
-  currentPathInfo.pathData.push(...path2js(sibling));
+  getPathData(currentPathInfo).push(...getPathData(sibling));
+  currentPathInfo.merged = true;
 }
 
 /**
  * @param {PathElementInfo} currentPathInfo
  */
 function writePathData(currentPathInfo) {
-  if (currentPathInfo.pathData === undefined) {
+  if (!currentPathInfo.merged || currentPathInfo.pathData === undefined) {
     return;
   }
   js2path(currentPathInfo.pathEl, currentPathInfo.pathData, {});

@@ -26,9 +26,10 @@ export const fn = () => {
         let currentPath;
         const mergedNodes = new Set();
         for (const child of node.children) {
+          // TODO: SIMPLIFY THIS? CHECK FOR ELEMENT TYPE CAN BE IN ISMERGABLE
           if (child.type === 'element' && child.name === 'path') {
             if (currentPath === undefined) {
-              currentPath = { pathEl: child };
+              currentPath = canBeFirstPath({ pathEl: child });
             } else {
               const childPathInfo = { pathEl: child };
               if (isMergeable(currentPath, childPathInfo)) {
@@ -36,13 +37,15 @@ export const fn = () => {
                 mergedNodes.add(child);
               } else {
                 writePathData(currentPath);
-                currentPath = childPathInfo;
+                currentPath = canBeFirstPath(childPathInfo);
               }
             }
           } else if (currentPath !== undefined) {
             writePathData(currentPath);
             currentPath =
-              child.type === 'element' ? { pathEl: child } : undefined;
+              child.type === 'element'
+                ? canBeFirstPath({ pathEl: child })
+                : undefined;
           }
         }
 
@@ -64,17 +67,30 @@ export const fn = () => {
 /**
  * @param {PathElementInfo} pathElInfo
  */
+function canBeFirstPath(pathElInfo) {
+  // TODO: compute style to get marker-end.
+  if (pathElInfo.pathEl.attributes['marker-end']) {
+    return;
+  }
+  return pathElInfo;
+}
+
+/**
+ * @param {PathElementInfo} pathElInfo
+ */
 function getPathData(pathElInfo) {
   if (!pathElInfo.pathData) {
     pathElInfo.pathData = path2js(pathElInfo.pathEl);
   }
   return pathElInfo.pathData;
 }
+
 /**
  * @param {PathElementInfo} currentPathInfo
  * @param {PathElementInfo} sibling
  */
 function isMergeable(currentPathInfo, sibling) {
+  // TODO: MAKE SURE THERE ARE NO MARKERS, ETC.
   const pathAttributes = Object.entries(currentPathInfo.pathEl.attributes);
   if (
     pathAttributes.length !== Object.entries(sibling.pathEl.attributes).length

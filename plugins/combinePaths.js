@@ -26,7 +26,6 @@ export const fn = () => {
         let currentPath;
         const mergedNodes = new Set();
         for (const child of node.children) {
-          // TODO: SIMPLIFY THIS? CHECK FOR ELEMENT TYPE CAN BE IN ISMERGABLE
           if (child.type === 'element' && child.name === 'path') {
             if (currentPath === undefined) {
               currentPath = canBeFirstPath({ pathEl: child });

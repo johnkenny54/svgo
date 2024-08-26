@@ -1,3 +1,5 @@
+import { getDocData } from '../lib/docdata.js';
+import { includesUrlReference } from '../lib/svgo/tools.js';
 import { intersects, js2path, path2js } from './_path.js';
 
 export const name = 'combinePaths';
@@ -15,7 +17,8 @@ export const description = 'combines multiple consecutive paths';
 /**
  * @type {import('./plugins-types.js').Plugin<'combinePaths'>}
  */
-export const fn = () => {
+export const fn = (root) => {
+  const docData = getDocData(root);
   return {
     element: {
       enter: (node) => {
@@ -28,7 +31,7 @@ export const fn = () => {
         for (const child of node.children) {
           if (child.type === 'element' && child.name === 'path') {
             if (currentPath === undefined) {
-              currentPath = canBeFirstPath({ pathEl: child });
+              currentPath = canBeFirstPath({ pathEl: child }, docData.styles);
             } else {
               const childPathInfo = { pathEl: child };
               if (isMergeable(currentPath, childPathInfo)) {
@@ -36,14 +39,14 @@ export const fn = () => {
                 mergedNodes.add(child);
               } else {
                 writePathData(currentPath);
-                currentPath = canBeFirstPath(childPathInfo);
+                currentPath = canBeFirstPath(childPathInfo, docData.styles);
               }
             }
           } else if (currentPath !== undefined) {
             writePathData(currentPath);
             currentPath =
               child.type === 'element'
-                ? canBeFirstPath({ pathEl: child })
+                ? canBeFirstPath({ pathEl: child }, docData.styles)
                 : undefined;
           }
         }
@@ -65,10 +68,28 @@ export const fn = () => {
 
 /**
  * @param {PathElementInfo} pathElInfo
+ * @param {import('../lib/docdata.js').StyleData} styleData
  */
-function canBeFirstPath(pathElInfo) {
-  // TODO: compute style to get marker-end.
-  if (pathElInfo.pathEl.attributes['marker-end']) {
+function canBeFirstPath(pathElInfo, styleData) {
+  // TODO: use computeStyle() [not computeOwnStyle]
+  const styles = styleData.computeOwnStyle(pathElInfo.pathEl);
+  if (
+    [
+      'clip-path',
+      'mask',
+      'mask-image',
+      'marker-end',
+      'marker-mid',
+      'marker-start',
+    ].some((attName) => styles.get(attName))
+  ) {
+    return;
+  }
+  if (
+    ['fill', 'filter', 'stroke'].some((attName) =>
+      includesUrlReference(styles.get(attName)),
+    )
+  ) {
     return;
   }
   return pathElInfo;

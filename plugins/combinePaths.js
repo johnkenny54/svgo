@@ -7,6 +7,7 @@ export const description = 'combines multiple consecutive paths';
 
 /**
  * @typedef {import('../lib/types.js').PathDataItem} PathDataItem
+ * @typedef {import('../lib/types.js').XastChild} XastChild
  * @typedef {import('../lib/types.js').XastElement} XastElement
  * @typedef {{pathEl:XastElement,
  *  pathData?:PathDataItem[],
@@ -20,6 +21,15 @@ const allowedStyleFeatures = new Set([
   'attribute-selectors',
   'simple-selectors',
 ]);
+
+/**
+ * @param {XastChild} node
+ */
+function makePathElInfo(node) {
+  return node.type === 'element' && node.name === 'path'
+    ? { pathEl: node }
+    : undefined;
+}
 
 /**
  * @param {Set<import('../lib/docdata.js').CSSFeatures>} features
@@ -53,49 +63,42 @@ export const fn = (root) => {
     element: {
       enter: (node) => {
         parents.push({ element: node });
-        if (node.children.length > 0) {
-          let currentPath;
-          const mergedNodes = new Set();
-          for (const child of node.children) {
-            if (child.type === 'element' && child.name === 'path') {
-              if (currentPath === undefined) {
-                currentPath = canBeFirstPath(
-                  { pathEl: child },
-                  styleData,
-                  parents,
-                );
-              } else {
-                const childPathInfo = { pathEl: child };
-                if (isMergeable(currentPath, childPathInfo)) {
-                  mergePaths(currentPath, childPathInfo);
-                  mergedNodes.add(child);
-                } else {
-                  writePathData(currentPath);
-                  currentPath = canBeFirstPath(
-                    childPathInfo,
-                    styleData,
-                    parents,
-                  );
-                }
-              }
-            } else if (currentPath !== undefined) {
-              writePathData(currentPath);
-              currentPath =
-                child.type === 'element'
-                  ? canBeFirstPath({ pathEl: child }, styleData, parents)
-                  : undefined;
-            }
-          }
 
-          if (currentPath) {
-            writePathData(currentPath);
-          }
+        if (node.children.length === 0) {
+          return;
+        }
 
-          if (mergedNodes.size) {
-            node.children = node.children.filter(
-              (child) => !mergedNodes.has(child),
+        let currentPath;
+        const mergedNodes = new Set();
+
+        for (const child of node.children) {
+          if (currentPath === undefined) {
+            currentPath = canBeFirstPath(
+              makePathElInfo(child),
+              styleData,
+              parents,
             );
+            continue;
           }
+          const childPathInfo = makePathElInfo(child);
+          const mergeablePathInfo = isMergeable(currentPath, childPathInfo);
+          if (mergeablePathInfo !== undefined) {
+            mergePaths(currentPath, mergeablePathInfo);
+            mergedNodes.add(child);
+          } else {
+            writePathData(currentPath);
+            currentPath = canBeFirstPath(childPathInfo, styleData, parents);
+          }
+        }
+
+        if (currentPath) {
+          writePathData(currentPath);
+        }
+
+        if (mergedNodes.size) {
+          node.children = node.children.filter(
+            (child) => !mergedNodes.has(child),
+          );
         }
       },
       exit: () => parents.pop(),
@@ -104,11 +107,15 @@ export const fn = (root) => {
 };
 
 /**
- * @param {PathElementInfo} pathElInfo
+ * @param {PathElementInfo|undefined} pathElInfo
  * @param {import('../lib/docdata.js').StyleData} styleData
  * @param {{element:XastElement}[]} parents
+ * @returns {PathElementInfo|undefined}
  */
 function canBeFirstPath(pathElInfo, styleData, parents) {
+  if (pathElInfo === undefined) {
+    return undefined;
+  }
   const styles = styleData.computeStyle(pathElInfo.pathEl, parents);
   if (
     [
@@ -144,14 +151,17 @@ function getPathData(pathElInfo) {
 
 /**
  * @param {PathElementInfo} currentPathInfo
- * @param {PathElementInfo} sibling
+ * @param {PathElementInfo|undefined} sibling
  */
 function isMergeable(currentPathInfo, sibling) {
+  if (sibling === undefined) {
+    return;
+  }
   const pathAttributes = Object.entries(currentPathInfo.pathEl.attributes);
   if (
     pathAttributes.length !== Object.entries(sibling.pathEl.attributes).length
   ) {
-    return false;
+    return;
   }
 
   // Make sure all attributes other than "d" are identical.
@@ -160,16 +170,16 @@ function isMergeable(currentPathInfo, sibling) {
       continue;
     }
     if (sibling.pathEl.attributes[k] !== v) {
-      return false;
+      return;
     }
   }
 
   // Make sure paths don't intersect.
   if (intersects(getPathData(currentPathInfo), getPathData(sibling))) {
-    return false;
+    return;
   }
 
-  return true;
+  return sibling;
 }
 
 /**

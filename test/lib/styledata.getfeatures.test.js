@@ -1,7 +1,7 @@
 import { generateData } from './testutils.js';
 
 /**
- * @param {Set} s
+ * @param {Set<import('../../lib/docdata.js').CSSFeatures>} s
  * @param {import('../../lib/docdata.js').CSSFeatures[]} a
  */
 function setsAreIdentical(s, a) {
@@ -19,8 +19,11 @@ function checkFile(fileSuffix, expected) {
   const data = generateData(
     `./test/lib/docdata/style.getfeatures.${fileSuffix}.svg`,
   );
+  expect(data.docData.styles).toBeDefined();
+  if (!data.docData.styles) {
+    return;
+  }
   const features = data.docData.styles.getFeatures();
-  console.log(features);
   return setsAreIdentical(features, expected);
 }
 

@@ -20,37 +20,54 @@ function generateTreeData(root) {
 }
 
 /**
- * @param {{docData:{styles:import('../../lib/docdata.js').StyleData}}} data
+ * @param {import('../../lib/docdata.js').StyleData} styleData
  * @param {Map<string,import('../../lib/types.js').XastElement>} treeInfo
  * @param {string} id
  * @param {string} styleName
  */
-function getComputed(data, treeInfo, id, styleName) {
+function getComputed(styleData, treeInfo, id, styleName) {
   const node = treeInfo.get(id);
   if (node === undefined) {
     throw new Error();
   }
-  return data.docData.styles.computeOwnStyle(node).get(styleName);
+  return styleData.computeOwnStyle(node).get(styleName);
 }
 
 test('computeOwnStyle', () => {
   const data = generateData('./test/lib/docdata/style.computeownstyle.1.svg');
   const treeInfo = generateTreeData(data.root);
+  const styleData = data.docData.styles;
 
-  expect(getComputed(data, treeInfo, 'stroke-att', 'stroke')).toBe('green');
-  expect(getComputed(data, treeInfo, 'stroke-att', 'stroke-width')).toBe(
+  expect(styleData).toBeDefined();
+  if (styleData === undefined) {
+    return;
+  }
+
+  expect(getComputed(styleData, treeInfo, 'stroke-att', 'stroke')).toBe(
+    'green',
+  );
+  expect(getComputed(styleData, treeInfo, 'stroke-att', 'stroke-width')).toBe(
     undefined,
   );
 
-  expect(getComputed(data, treeInfo, 'stroke-style-att', 'stroke')).toBe('red');
-  expect(getComputed(data, treeInfo, 'stroke-class', 'stroke')).toBe('blue');
-  expect(getComputed(data, treeInfo, 'stroke-class-with-id', 'stroke')).toBe(
-    'yellow',
+  expect(getComputed(styleData, treeInfo, 'stroke-style-att', 'stroke')).toBe(
+    'red',
   );
-  expect(getComputed(data, treeInfo, 'stroke-style-class-imp', 'stroke')).toBe(
-    'orange',
+  expect(getComputed(styleData, treeInfo, 'stroke-class', 'stroke')).toBe(
+    'blue',
   );
   expect(
-    getComputed(data, treeInfo, 'stroke-style-class-imp-specific', 'stroke'),
+    getComputed(styleData, treeInfo, 'stroke-class-with-id', 'stroke'),
+  ).toBe('yellow');
+  expect(
+    getComputed(styleData, treeInfo, 'stroke-style-class-imp', 'stroke'),
+  ).toBe('orange');
+  expect(
+    getComputed(
+      styleData,
+      treeInfo,
+      'stroke-style-class-imp-specific',
+      'stroke',
+    ),
   ).toBe('pink');
 });

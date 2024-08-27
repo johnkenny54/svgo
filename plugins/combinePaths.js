@@ -38,9 +38,11 @@ function supportsAllFeatures(features) {
  */
 export const fn = (root) => {
   const docData = getDocData(root);
+  const styleData = docData.styles;
   const enabled =
-    supportsAllFeatures(docData.styles.getFeatures()) &&
-    !docData.styles.hasAttributeSelector('d');
+    styleData !== undefined &&
+    supportsAllFeatures(styleData.getFeatures()) &&
+    !styleData.hasAttributeSelector('d');
   if (!enabled) {
     return;
   }
@@ -57,7 +59,7 @@ export const fn = (root) => {
         for (const child of node.children) {
           if (child.type === 'element' && child.name === 'path') {
             if (currentPath === undefined) {
-              currentPath = canBeFirstPath({ pathEl: child }, docData.styles);
+              currentPath = canBeFirstPath({ pathEl: child }, styleData);
             } else {
               const childPathInfo = { pathEl: child };
               if (isMergeable(currentPath, childPathInfo)) {
@@ -65,14 +67,14 @@ export const fn = (root) => {
                 mergedNodes.add(child);
               } else {
                 writePathData(currentPath);
-                currentPath = canBeFirstPath(childPathInfo, docData.styles);
+                currentPath = canBeFirstPath(childPathInfo, styleData);
               }
             }
           } else if (currentPath !== undefined) {
             writePathData(currentPath);
             currentPath =
               child.type === 'element'
-                ? canBeFirstPath({ pathEl: child }, docData.styles)
+                ? canBeFirstPath({ pathEl: child }, styleData)
                 : undefined;
           }
         }

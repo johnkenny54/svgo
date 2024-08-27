@@ -9,7 +9,7 @@
     "strict": true,
     "resolveJsonModule": true
   },
-  "include": ["lib/**/*.js", "plugins/**/*", "test/cli/**/*"],
+  "include": ["lib/**/*.js", "plugins/**/*", "test/**/*"],
   "exclude": [
     "lib/svgo-node.js",
     "lib/svgo-node.test.js",

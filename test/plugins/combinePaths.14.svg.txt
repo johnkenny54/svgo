@@ -1,11 +1,11 @@
-Don't merge paths in files with pseudo-class rules.
+Don't merge paths with attribute selector on "d".
 
 ===
 
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
   <style>
     .stroke {stroke:blue}
-    :first-child {stroke:red}
+    .stroke[d=&quot;M 1 5 h 10&quot;] {stroke:red}
   </style>
   <g>
     <path d="M 1 5 h 10" class="stroke"/>
@@ -18,7 +18,7 @@ Don't merge paths in files with pseudo-class rules.
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
     <style>
         .stroke {stroke:blue}
-    :first-child {stroke:red}
+    .stroke[d=&quot;M 1 5 h 10&quot;] {stroke:red}
     </style>
     <g>
         <path d="M 1 5 h 10" class="stroke"/>

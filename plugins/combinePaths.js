@@ -14,11 +14,37 @@ export const description = 'combines multiple consecutive paths';
  * }} PathElementInfo
  */
 
+/** @type {Set<import('../lib/docdata.js').CSSFeatures>} */
+const allowedStyleFeatures = new Set([
+  'atrules',
+  'attribute-selectors',
+  'simple-selectors',
+]);
+
+/**
+ * @param {Set<import('../lib/docdata.js').CSSFeatures>} features
+ */
+function supportsAllFeatures(features) {
+  for (const feature of features) {
+    if (!allowedStyleFeatures.has(feature)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 /**
  * @type {import('./plugins-types.js').Plugin<'combinePaths'>}
  */
 export const fn = (root) => {
   const docData = getDocData(root);
+  const enabled =
+    supportsAllFeatures(docData.styles.getFeatures()) &&
+    !docData.styles.hasAttributeSelector('d');
+  if (!enabled) {
+    return;
+  }
+
   return {
     element: {
       enter: (node) => {

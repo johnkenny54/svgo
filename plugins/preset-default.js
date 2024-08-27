@@ -28,7 +28,7 @@ import * as convertPathData from './convertPathData.js';
 import * as convertTransform from './convertTransform.js';
 import * as removeEmptyAttrs from './removeEmptyAttrs.js';
 import * as removeEmptyContainers from './removeEmptyContainers.js';
-import * as mergePaths from './mergePaths.js';
+import * as combinePaths from './combinePaths.js';
 import * as removeUnusedNS from './removeUnusedNS.js';
 import * as sortAttrs from './sortAttrs.js';
 import * as sortDefsChildren from './sortDefsChildren.js';
@@ -66,7 +66,7 @@ const presetDefault = createPreset({
     convertTransform,
     removeEmptyAttrs,
     removeEmptyContainers,
-    mergePaths,
+    combinePaths,
     removeUnusedNS,
     sortAttrs,
     sortDefsChildren,

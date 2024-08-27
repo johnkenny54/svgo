@@ -47,49 +47,58 @@ export const fn = (root) => {
     return;
   }
 
+  /** @type {{element:XastElement}[]} */
+  const parents = [];
   return {
     element: {
       enter: (node) => {
-        if (node.children.length === 0) {
-          return;
-        }
-
-        let currentPath;
-        const mergedNodes = new Set();
-        for (const child of node.children) {
-          if (child.type === 'element' && child.name === 'path') {
-            if (currentPath === undefined) {
-              currentPath = canBeFirstPath({ pathEl: child }, styleData);
-            } else {
-              const childPathInfo = { pathEl: child };
-              if (isMergeable(currentPath, childPathInfo)) {
-                mergePaths(currentPath, childPathInfo);
-                mergedNodes.add(child);
+        parents.push({ element: node });
+        if (node.children.length > 0) {
+          let currentPath;
+          const mergedNodes = new Set();
+          for (const child of node.children) {
+            if (child.type === 'element' && child.name === 'path') {
+              if (currentPath === undefined) {
+                currentPath = canBeFirstPath(
+                  { pathEl: child },
+                  styleData,
+                  parents,
+                );
               } else {
-                writePathData(currentPath);
-                currentPath = canBeFirstPath(childPathInfo, styleData);
+                const childPathInfo = { pathEl: child };
+                if (isMergeable(currentPath, childPathInfo)) {
+                  mergePaths(currentPath, childPathInfo);
+                  mergedNodes.add(child);
+                } else {
+                  writePathData(currentPath);
+                  currentPath = canBeFirstPath(
+                    childPathInfo,
+                    styleData,
+                    parents,
+                  );
+                }
               }
+            } else if (currentPath !== undefined) {
+              writePathData(currentPath);
+              currentPath =
+                child.type === 'element'
+                  ? canBeFirstPath({ pathEl: child }, styleData, parents)
+                  : undefined;
             }
-          } else if (currentPath !== undefined) {
+          }
+
+          if (currentPath) {
             writePathData(currentPath);
-            currentPath =
-              child.type === 'element'
-                ? canBeFirstPath({ pathEl: child }, styleData)
-                : undefined;
+          }
+
+          if (mergedNodes.size) {
+            node.children = node.children.filter(
+              (child) => !mergedNodes.has(child),
+            );
           }
         }
-
-        if (currentPath) {
-          writePathData(currentPath);
-        }
-
-        if (mergedNodes.size === 0) {
-          return;
-        }
-        node.children = node.children.filter(
-          (child) => !mergedNodes.has(child),
-        );
       },
+      exit: () => parents.pop(),
     },
   };
 };
@@ -97,10 +106,10 @@ export const fn = (root) => {
 /**
  * @param {PathElementInfo} pathElInfo
  * @param {import('../lib/docdata.js').StyleData} styleData
+ * @param {{element:XastElement}[]} parents
  */
-function canBeFirstPath(pathElInfo, styleData) {
-  // TODO: use computeStyle() [not computeOwnStyle]
-  const styles = styleData.computeOwnStyle(pathElInfo.pathEl);
+function canBeFirstPath(pathElInfo, styleData, parents) {
+  const styles = styleData.computeStyle(pathElInfo.pathEl, parents);
   if (
     [
       'clip-path',
@@ -138,7 +147,6 @@ function getPathData(pathElInfo) {
  * @param {PathElementInfo} sibling
  */
 function isMergeable(currentPathInfo, sibling) {
-  // TODO: MAKE SURE THERE ARE NO MARKERS, ETC.
   const pathAttributes = Object.entries(currentPathInfo.pathEl.attributes);
   if (
     pathAttributes.length !== Object.entries(sibling.pathEl.attributes).length

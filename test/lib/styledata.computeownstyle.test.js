@@ -1,19 +1,8 @@
-import fs from 'node:fs';
-import { parseSvg } from './parser.js';
-import { getDocData } from './docdata.js';
-import { visit } from './xast.js';
+import { visit } from '../../lib/xast.js';
+import { generateData } from './testutils.js';
 
 /**
- * @param {string} fileName
- */
-function generateData(fileName) {
-  const input = fs.readFileSync(fileName, 'utf8');
-  const root = parseSvg(input);
-  return { root: root, docData: getDocData(root) };
-}
-
-/**
- * @param {import('./types.js').XastRoot} root
+ * @param {import('../../lib/types.js').XastRoot} root
  */
 function generateTreeData(root) {
   const data = new Map();
@@ -31,8 +20,8 @@ function generateTreeData(root) {
 }
 
 /**
- * @param {{docData:{styles:import('./docdata.js').StyleData}}} data
- * @param {Map<string,import('./types.js').XastElement>} treeInfo
+ * @param {{docData:{styles:import('../../lib/docdata.js').StyleData}}} data
+ * @param {Map<string,import('../../lib/types.js').XastElement>} treeInfo
  * @param {string} id
  * @param {string} styleName
  */

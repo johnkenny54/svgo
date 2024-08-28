@@ -29,7 +29,14 @@ function checkFile(fileSuffix, expected) {
 
 test('getFeatures', () => {
   expect(checkFile('1', ['simple-selectors'])).toBe(true);
+  expect(checkFile('2', ['atrules', 'combinators', 'simple-selectors'])).toBe(
+    true,
+  );
+
   expect(
-    checkFile('2', ['atrules', 'combinators', 'pseudos', 'simple-selectors']),
+    checkFile('3', ['atrules', 'combinators', 'pseudos', 'simple-selectors']),
+  ).toBe(true);
+  expect(
+    checkFile('4', ['atrules', 'combinators', 'pseudos', 'simple-selectors']),
   ).toBe(true);
 });

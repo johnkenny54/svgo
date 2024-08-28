@@ -133,9 +133,12 @@ function canBeFirstPath(pathElInfo, styleData, parents) {
     return;
   }
   if (
-    ['fill', 'filter', 'stroke'].some((attName) =>
-      includesUrlReference(styles.get(attName)),
-    )
+    ['fill', 'filter', 'stroke'].some((attName) => {
+      const value = styles.get(attName);
+      return (
+        value !== undefined && (value === null || includesUrlReference(value))
+      );
+    })
   ) {
     return;
   }

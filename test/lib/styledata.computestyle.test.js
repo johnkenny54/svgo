@@ -122,3 +122,17 @@ test('computeStyle - custom properties', () => {
 
   expect(getComputed(styleData, treeInfo, 'path1', 'stroke')).toBeNull();
 });
+
+test('computeStyle - pseudo-class', () => {
+  const data = generateData('./test/lib/docdata/style.computestyle.6.svg');
+  const treeInfo = generateTreeData(data.root);
+  const styleData = data.docData.styles;
+
+  expect(styleData).toBeDefined();
+  if (styleData === null) {
+    return;
+  }
+
+  expect(getComputed(styleData, treeInfo, 'path1', 'stroke')).toBeNull();
+  expect(getComputed(styleData, treeInfo, 'path2', 'stroke')).toBe('green');
+});

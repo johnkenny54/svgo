@@ -50,7 +50,8 @@ export const fn = (root) => {
   const docData = getDocData(root);
   const styleData = docData.styles;
   const enabled =
-    styleData !== undefined &&
+    !docData.hasScripts &&
+    styleData !== null &&
     supportsAllFeatures(styleData.getFeatures()) &&
     !styleData.hasAttributeSelector('d');
   if (!enabled) {

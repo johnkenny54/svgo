@@ -134,6 +134,9 @@ function allStylesAreMergeable(styles) {
           continue;
         }
         break;
+      case 'fill-opacity':
+      case 'opacity':
+      case 'stroke-opacity':
       case 'stroke-width':
       case 'transform':
         continue;

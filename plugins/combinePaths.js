@@ -118,15 +118,18 @@ function canBeFirstPath(pathElInfo, styleData, parents) {
   }
   const styles = styleData.computeStyle(pathElInfo.pathEl, parents);
   if (
-    [
-      'clip-path',
-      'mask',
-      'mask-image',
-      'marker-end',
-      'marker-mid',
-      'marker-start',
-    ].some((attName) => styles.get(attName))
+    ['clip-path', 'marker-end', 'marker-mid', 'marker-start'].some(
+      (attName) => {
+        if (!styles.has(attName)) {
+          return false;
+        }
+        return styles.get(attName) !== 'none';
+      },
+    )
   ) {
+    return;
+  }
+  if (['mask', 'mask-image'].some((attName) => styles.get(attName))) {
     return;
   }
   if (

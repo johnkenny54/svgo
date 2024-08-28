@@ -1,4 +1,3 @@
-import { unknown } from '../../lib/docdata.js';
 import { visit } from '../../lib/xast.js';
 import { generateData } from './testutils.js';
 
@@ -80,5 +79,5 @@ test('computeStyle 2', () => {
   }
 
   expect(getComputed(styleData, treeInfo, 'path1', 'stroke')).toBe('blue');
-  expect(getComputed(styleData, treeInfo, 'path1', 'marker-end')).toBe(unknown);
+  expect(getComputed(styleData, treeInfo, 'path1', 'marker-end')).toBe(null);
 });

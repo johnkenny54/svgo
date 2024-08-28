@@ -1,3 +1,4 @@
+import { unknown } from '../../lib/docdata.js';
 import { visit } from '../../lib/xast.js';
 import { generateData } from './testutils.js';
 
@@ -33,7 +34,7 @@ function getComputed(styleData, treeInfo, id, styleName) {
   return styleData.computeOwnStyle(node).get(styleName);
 }
 
-test('computeOwnStyle', () => {
+test('computeOwnStyle 1', () => {
   const data = generateData('./test/lib/docdata/style.computeownstyle.1.svg');
   const treeInfo = generateTreeData(data.root);
   const styleData = data.docData.styles;
@@ -70,4 +71,18 @@ test('computeOwnStyle', () => {
       'stroke',
     ),
   ).toBe('pink');
+});
+
+test('computeOwnStyle 2', () => {
+  const data = generateData('./test/lib/docdata/style.computeownstyle.2.svg');
+  const treeInfo = generateTreeData(data.root);
+  const styleData = data.docData.styles;
+
+  expect(styleData).toBeDefined();
+  if (styleData === undefined) {
+    return;
+  }
+
+  expect(getComputed(styleData, treeInfo, 'path1', 'stroke')).toBe('blue');
+  expect(getComputed(styleData, treeInfo, 'path1', 'marker-end')).toBe(unknown);
 });

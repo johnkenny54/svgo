@@ -1,3 +1,4 @@
+import { unknown } from '../../lib/docdata.js';
 import { visit } from '../../lib/xast.js';
 import { generateData } from './testutils.js';
 
@@ -50,7 +51,7 @@ function getComputed(styleData, treeInfo, id, styleName) {
   return styleData.computeStyle(node, parents).get(styleName);
 }
 
-test('computeStyle', () => {
+test('computeStyle 1', () => {
   const data = generateData('./test/lib/docdata/style.computestyle.1.svg');
   const treeInfo = generateTreeData(data.root);
   const styleData = data.docData.styles;
@@ -66,4 +67,18 @@ test('computeStyle', () => {
   expect(getComputed(styleData, treeInfo, 'gredimp-gblue', 'stroke')).toBe(
     'blue',
   );
+});
+
+test('computeStyle 2', () => {
+  const data = generateData('./test/lib/docdata/style.computestyle.2.svg');
+  const treeInfo = generateTreeData(data.root);
+  const styleData = data.docData.styles;
+
+  expect(styleData).toBeDefined();
+  if (styleData === undefined) {
+    return;
+  }
+
+  expect(getComputed(styleData, treeInfo, 'path1', 'stroke')).toBe('blue');
+  expect(getComputed(styleData, treeInfo, 'path1', 'marker-end')).toBe(unknown);
 });

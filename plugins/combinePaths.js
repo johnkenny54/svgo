@@ -107,6 +107,43 @@ export const fn = (root) => {
 };
 
 /**
+ * @param {Map<string,string|null>} styles
+ */
+function allStylesAreMergeable(styles) {
+  /**
+   *
+   * @param {string|null} value
+   */
+  function isPaintMergeable(value) {
+    return value !== null && !includesUrlReference(value);
+  }
+
+  for (const [name, value] of styles.entries()) {
+    switch (name) {
+      case 'marker-end':
+      case 'marker-mid':
+      case 'marker-start':
+        if (value === 'none') {
+          continue;
+        }
+        break;
+      case 'fill':
+      case 'stroke':
+        if (isPaintMergeable(value)) {
+          continue;
+        }
+        break;
+      case 'stroke-width':
+      case 'transform':
+        continue;
+    }
+
+    return false;
+  }
+  return true;
+}
+
+/**
  * @param {PathElementInfo|undefined} pathElInfo
  * @param {import('../lib/docdata.js').StyleData} styleData
  * @param {{element:XastElement}[]} parents
@@ -126,31 +163,10 @@ function canBeFirstPath(pathElInfo, styleData, parents) {
   }
 
   const styles = styleData.computeStyle(pathEl, parents);
-  if (
-    ['clip-path', 'marker-end', 'marker-mid', 'marker-start'].some(
-      (attName) => {
-        if (!styles.has(attName)) {
-          return false;
-        }
-        return styles.get(attName) !== 'none';
-      },
-    )
-  ) {
+  if (!allStylesAreMergeable(styles)) {
     return;
   }
-  if (['mask', 'mask-image'].some((attName) => styles.get(attName))) {
-    return;
-  }
-  if (
-    ['fill', 'filter', 'stroke'].some((attName) => {
-      const value = styles.get(attName);
-      return (
-        value !== undefined && (value === null || includesUrlReference(value))
-      );
-    })
-  ) {
-    return;
-  }
+
   return pathElInfo;
 }
 

@@ -56,7 +56,7 @@ test('computeStyle 1', () => {
   const styleData = data.docData.styles;
 
   expect(styleData).toBeDefined();
-  if (styleData === undefined) {
+  if (styleData === null) {
     return;
   }
 
@@ -74,10 +74,24 @@ test('computeStyle 2', () => {
   const styleData = data.docData.styles;
 
   expect(styleData).toBeDefined();
-  if (styleData === undefined) {
+  if (styleData === null) {
     return;
   }
 
   expect(getComputed(styleData, treeInfo, 'path1', 'stroke')).toBe('blue');
   expect(getComputed(styleData, treeInfo, 'path1', 'marker-end')).toBe(null);
+});
+
+test('computeStyle - uninherited properties', () => {
+  const data = generateData('./test/lib/docdata/style.computestyle.3.svg');
+  const treeInfo = generateTreeData(data.root);
+  const styleData = data.docData.styles;
+
+  expect(styleData).toBeDefined();
+  if (styleData === null) {
+    return;
+  }
+
+  expect(getComputed(styleData, treeInfo, 'path1', 'stroke')).toBe('blue');
+  expect(getComputed(styleData, treeInfo, 'path1', 'opacity')).toBeUndefined();
 });

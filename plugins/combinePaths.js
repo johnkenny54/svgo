@@ -116,10 +116,16 @@ function canBeFirstPath(pathElInfo, styleData, parents) {
   if (pathElInfo === undefined) {
     return undefined;
   }
-  if (pathElInfo.pathEl.children.length > 0) {
+
+  const pathEl = pathElInfo.pathEl;
+  if (pathEl.children.length > 0) {
     return;
   }
-  const styles = styleData.computeStyle(pathElInfo.pathEl, parents);
+  if (pathEl.attributes['pathLength']) {
+    return;
+  }
+
+  const styles = styleData.computeStyle(pathEl, parents);
   if (
     ['clip-path', 'marker-end', 'marker-mid', 'marker-start'].some(
       (attName) => {

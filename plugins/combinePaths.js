@@ -116,6 +116,9 @@ function canBeFirstPath(pathElInfo, styleData, parents) {
   if (pathElInfo === undefined) {
     return undefined;
   }
+  if (pathElInfo.pathEl.children.length > 0) {
+    return;
+  }
   const styles = styleData.computeStyle(pathElInfo.pathEl, parents);
   if (
     ['clip-path', 'marker-end', 'marker-mid', 'marker-start'].some(
@@ -163,6 +166,11 @@ function isMergeable(currentPathInfo, sibling) {
   if (sibling === undefined) {
     return;
   }
+
+  if (sibling.pathEl.children.length > 0) {
+    return;
+  }
+
   const pathAttributes = Object.entries(currentPathInfo.pathEl.attributes);
   if (
     pathAttributes.length !== Object.entries(sibling.pathEl.attributes).length

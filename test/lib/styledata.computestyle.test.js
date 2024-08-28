@@ -95,3 +95,30 @@ test('computeStyle - uninherited properties', () => {
   expect(getComputed(styleData, treeInfo, 'path1', 'stroke')).toBe('blue');
   expect(getComputed(styleData, treeInfo, 'path1', 'opacity')).toBeUndefined();
 });
+
+test('computeStyle - selector lists', () => {
+  const data = generateData('./test/lib/docdata/style.computestyle.4.svg');
+  const treeInfo = generateTreeData(data.root);
+  const styleData = data.docData.styles;
+
+  expect(styleData).toBeDefined();
+  if (styleData === null) {
+    return;
+  }
+
+  expect(getComputed(styleData, treeInfo, 'path1', 'stroke')).toBe('blue');
+  expect(getComputed(styleData, treeInfo, 'path2', 'stroke')).toBe('red');
+});
+
+test('computeStyle - custom properties', () => {
+  const data = generateData('./test/lib/docdata/style.computestyle.5.svg');
+  const treeInfo = generateTreeData(data.root);
+  const styleData = data.docData.styles;
+
+  expect(styleData).toBeDefined();
+  if (styleData === null) {
+    return;
+  }
+
+  expect(getComputed(styleData, treeInfo, 'path1', 'stroke')).toBeNull();
+});

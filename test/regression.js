@@ -55,7 +55,7 @@ const runTests = async (list) => {
       height,
     );
     // ignore small aliasing issues
-    if (matched <= 4) {
+    if (matched <= 0) {
       passed++;
     } else {
       mismatched++;
@@ -100,6 +100,9 @@ const runTests = async (list) => {
     const fixturesDir = path.join(__dirname, 'regression-fixtures');
     const filesPromise = fs.readdir(fixturesDir, { recursive: true });
     const server = http.createServer(async (req, res) => {
+      if (req.url === undefined) {
+        throw new Error();
+      }
       const name = req.url.slice(req.url.indexOf('/', 1));
       let file;
       try {

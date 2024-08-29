@@ -94,6 +94,9 @@ test('computeStyle - uninherited properties', () => {
 
   expect(getComputed(styleData, treeInfo, 'path1', 'stroke')).toBe('blue');
   expect(getComputed(styleData, treeInfo, 'path1', 'opacity')).toBeUndefined();
+  expect(
+    getComputed(styleData, treeInfo, 'path1', 'transform'),
+  ).toBeUndefined();
 });
 
 test('computeStyle - selector lists', () => {

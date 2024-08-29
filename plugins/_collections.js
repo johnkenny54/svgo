@@ -2154,7 +2154,6 @@ export const inheritableAttrs = new Set([
   'stroke',
   'text-anchor',
   'text-rendering',
-  'transform',
   'visibility',
   'word-spacing',
   'writing-mode',

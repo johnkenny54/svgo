@@ -4,15 +4,15 @@ Preserve transform on children when group has clip-path or mask
 
 ===
 
-<svg xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
     <mask id="mask">
         <path/>
     </mask>
     <g transform="rotate(45)">
         <g transform="scale(2)" fill="red">
-            <path d="..."/>
+            <path d="M3 1h5" stroke="green"/>
         </g>
-        <circle fill="red" transform="scale(2)"/>
+        <rect width="2" height="3" fill="red" transform="scale(2)"/>
     </g>
     <g clip-path="url(#clipPath)">
         <g transform="translate(10 10)"/>
@@ -26,15 +26,15 @@ Preserve transform on children when group has clip-path or mask
 
 @@@
 
-<svg xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
     <mask id="mask">
         <path/>
     </mask>
     <g transform="rotate(45) scale(2)" fill="red">
         <g>
-            <path d="..."/>
+            <path d="M3 1h5" stroke="green"/>
         </g>
-        <circle/>
+        <rect width="2" height="3"/>
     </g>
     <g clip-path="url(#clipPath)">
         <g transform="translate(10 10)"/>

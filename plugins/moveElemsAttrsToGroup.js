@@ -70,8 +70,10 @@ export const fn = (root) => {
               initial = false;
               // collect all inheritable attributes from first child element
               for (const [name, value] of Object.entries(child.attributes)) {
-                // consider only inheritable attributes
-                if (inheritableAttrs.has(name)) {
+                // Consider only inheritable attributes and transform. Transform is not inheritable, but according
+                // to https://developer.mozilla.org/docs/Web/SVG/Element/g, "Transformations applied to the
+                // <g> element are performed on its child elements"
+                if (inheritableAttrs.has(name) || name === 'transform') {
                   commonAttributes.set(name, value);
                 }
               }

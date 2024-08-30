@@ -43,5 +43,19 @@ test('getFeatures', () => {
   // No style elements.
   expect(checkFile('5', [])).toBe(true);
   // Empty style element.
-  expect(checkFile('5', [])).toBe(true);
+  expect(checkFile('6', [])).toBe(true);
+  // Same as test 4, but with media query in style element.
+  expect(
+    checkFile('7', ['atrules', 'combinators', 'pseudos', 'simple-selectors']),
+  ).toBe(true);
+  // Same as test 1, but with type="text/css".
+  expect(checkFile('8', ['simple-selectors'])).toBe(true);
+  // If media=" all ", should not count as a media query.
+  expect(checkFile('9', ['simple-selectors'])).toBe(true);
+  // If media=" ", should not count as a media query.
+  expect(checkFile('10', ['simple-selectors'])).toBe(true);
+  // If @media all{}, should not count as a media query.
+  expect(checkFile('11', ['simple-selectors'])).toBe(true);
+  // If @media {}, should not count as a media query.
+  expect(checkFile('12', ['simple-selectors'])).toBe(true);
 });

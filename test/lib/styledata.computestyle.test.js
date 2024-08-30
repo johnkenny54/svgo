@@ -139,3 +139,16 @@ test('computeStyle - pseudo-class', () => {
   expect(getComputed(styleData, treeInfo, 'path1', 'stroke')).toBeNull();
   expect(getComputed(styleData, treeInfo, 'path2', 'stroke')).toBe('green');
 });
+
+test('computeStyle - @media all', () => {
+  const data = generateData('./test/lib/docdata/style.computestyle.7.svg');
+  const treeInfo = generateTreeData(data.root);
+  const styleData = data.docData.getStyles();
+
+  expect(styleData).toBeDefined();
+  if (styleData === null) {
+    return;
+  }
+
+  expect(getComputed(styleData, treeInfo, 'r1', 'fill')).toBe('green');
+});

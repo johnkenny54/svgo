@@ -53,7 +53,7 @@ function getComputed(styleData, treeInfo, id, styleName) {
 test('computeStyle 1', () => {
   const data = generateData('./test/lib/docdata/style.computestyle.1.svg');
   const treeInfo = generateTreeData(data.root);
-  const styleData = data.docData.styles;
+  const styleData = data.docData.getStyles();
 
   expect(styleData).toBeDefined();
   if (styleData === null) {
@@ -71,7 +71,7 @@ test('computeStyle 1', () => {
 test('computeStyle 2', () => {
   const data = generateData('./test/lib/docdata/style.computestyle.2.svg');
   const treeInfo = generateTreeData(data.root);
-  const styleData = data.docData.styles;
+  const styleData = data.docData.getStyles();
 
   expect(styleData).toBeDefined();
   if (styleData === null) {
@@ -85,7 +85,7 @@ test('computeStyle 2', () => {
 test('computeStyle - uninherited properties', () => {
   const data = generateData('./test/lib/docdata/style.computestyle.3.svg');
   const treeInfo = generateTreeData(data.root);
-  const styleData = data.docData.styles;
+  const styleData = data.docData.getStyles();
 
   expect(styleData).toBeDefined();
   if (styleData === null) {
@@ -102,7 +102,7 @@ test('computeStyle - uninherited properties', () => {
 test('computeStyle - selector lists', () => {
   const data = generateData('./test/lib/docdata/style.computestyle.4.svg');
   const treeInfo = generateTreeData(data.root);
-  const styleData = data.docData.styles;
+  const styleData = data.docData.getStyles();
 
   expect(styleData).toBeDefined();
   if (styleData === null) {
@@ -116,7 +116,7 @@ test('computeStyle - selector lists', () => {
 test('computeStyle - custom properties', () => {
   const data = generateData('./test/lib/docdata/style.computestyle.5.svg');
   const treeInfo = generateTreeData(data.root);
-  const styleData = data.docData.styles;
+  const styleData = data.docData.getStyles();
 
   expect(styleData).toBeDefined();
   if (styleData === null) {
@@ -129,7 +129,7 @@ test('computeStyle - custom properties', () => {
 test('computeStyle - pseudo-class', () => {
   const data = generateData('./test/lib/docdata/style.computestyle.6.svg');
   const treeInfo = generateTreeData(data.root);
-  const styleData = data.docData.styles;
+  const styleData = data.docData.getStyles();
 
   expect(styleData).toBeDefined();
   if (styleData === null) {

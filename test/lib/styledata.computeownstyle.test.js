@@ -36,10 +36,10 @@ function getComputed(styleData, treeInfo, id, styleName) {
 test('computeOwnStyle 1', () => {
   const data = generateData('./test/lib/docdata/style.computeownstyle.1.svg');
   const treeInfo = generateTreeData(data.root);
-  const styleData = data.docData.styles;
+  const styleData = data.docData.getStyles();
 
   expect(styleData).toBeDefined();
-  if (styleData === undefined) {
+  if (styleData === null) {
     return;
   }
 
@@ -75,10 +75,10 @@ test('computeOwnStyle 1', () => {
 test('computeOwnStyle 2', () => {
   const data = generateData('./test/lib/docdata/style.computeownstyle.2.svg');
   const treeInfo = generateTreeData(data.root);
-  const styleData = data.docData.styles;
+  const styleData = data.docData.getStyles();
 
   expect(styleData).toBeDefined();
-  if (styleData === undefined) {
+  if (styleData === null) {
     return;
   }
 

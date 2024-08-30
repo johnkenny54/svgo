@@ -19,11 +19,12 @@ function checkFile(fileSuffix, expected) {
   const data = generateData(
     `./test/lib/docdata/style.getfeatures.${fileSuffix}.svg`,
   );
-  expect(data.docData.styles).toBeDefined();
-  if (!data.docData.styles) {
+  const styles = data.docData.getStyles();
+  expect(styles).toBeDefined();
+  if (!styles) {
     return;
   }
-  const features = data.docData.styles.getFeatures();
+  const features = styles.getFeatures();
   return setsAreIdentical(features, expected);
 }
 

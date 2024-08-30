@@ -40,4 +40,8 @@ test('getFeatures', () => {
   expect(
     checkFile('4', ['atrules', 'combinators', 'pseudos', 'simple-selectors']),
   ).toBe(true);
+  // No style elements.
+  expect(checkFile('5', [])).toBe(true);
+  // Empty style element.
+  expect(checkFile('5', [])).toBe(true);
 });

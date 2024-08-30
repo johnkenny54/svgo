@@ -85,3 +85,17 @@ test('computeOwnStyle 2', () => {
   expect(getComputed(styleData, treeInfo, 'path1', 'stroke')).toBe('blue');
   expect(getComputed(styleData, treeInfo, 'path1', 'marker-end')).toBe(null);
 });
+
+test('computeOwnStyle - combinators', () => {
+  const data = generateData('./test/lib/docdata/style.computeownstyle.3.svg');
+  const treeInfo = generateTreeData(data.root);
+  const styleData = data.docData.getStyles();
+
+  expect(styleData).toBeDefined();
+  if (styleData === null) {
+    return;
+  }
+
+  expect(getComputed(styleData, treeInfo, 'c1', 'fill')).toBe('red');
+  expect(getComputed(styleData, treeInfo, 'c2', 'fill')).toBe('green');
+});
